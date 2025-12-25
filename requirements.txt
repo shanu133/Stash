@@ -1,7 +1,10 @@
 fastapi
 uvicorn
 python-dotenv
-google-generativeai
+yt-dlp
 spotipy
-supabase
+google-generativeai
+requests
+pydantic
 ffmpeg-python
+python-multipart
