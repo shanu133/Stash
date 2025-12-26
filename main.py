@@ -60,9 +60,6 @@ async def recognize_reel(request: ReelRequest):
         shazam = Shazam()
         
         # Shazam requires ffmpeg or compatible file. Our download_audio handles this.
-        # If running locally on Windows without ffmpeg, this step might fail if the file format isn't supported natively.
-        # However, shazamio often handles many formats or throws readable errors.
-        
         out = await shazam.recognize_song(audio_filename)
         
         # Cleanup audio immediately
