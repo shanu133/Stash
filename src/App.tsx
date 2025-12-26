@@ -219,11 +219,16 @@ export default function App() {
         setState((prev) => ({ ...prev, processingStatus: status }));
       });
 
-      if (state.autoAddTopMatch && matches.length > 0) {
-        // Auto-add the top match
-        await handleSongSelection(matches[0]);
+      // AUTO-ACCEPT Logic:
+      // If user enabled auto-add OR confidence is very high (>= 90%)
+      const topMatch = matches[0];
+      const isHighConfidence = topMatch?.confidence && topMatch.confidence >= 0.90;
+
+      if ((state.autoAddTopMatch || isHighConfidence) && matches.length > 0) {
+        // Auto-add the top match without modal
+        await handleSongSelection(topMatch);
       } else {
-        // Show modal for selection
+        // Show modal for selection (low confidence or manual mode)
         setState((prev) => ({
           ...prev,
           currentMatches: matches,

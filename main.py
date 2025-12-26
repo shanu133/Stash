@@ -10,6 +10,7 @@ import google.generativeai as genai
 import spotipy
 from spotipy.oauth2 import SpotifyClientCredentials
 import yt_dlp
+import shutil
 
 # 1. Load Keys
 load_dotenv()
@@ -41,125 +42,113 @@ class ReelRequest(BaseModel):
 def health_check():
     return {"status": "Antigravity Engine Online 🟢"}
 
+
 @app.post("/recognize")
 def recognize_reel(request: ReelRequest):
-    print(f"🚀 Processing URL: {request.url}")
-    
-    # --- STEP 1: METADATA CHECK (The Fast Path) ---
-    try:
-        ydl_opts = {'quiet': True, 'no_warnings': True}
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(request.url, download=False)
-            track = info.get('track') or info.get('title')
-            artist = info.get('artist') or info.get('uploader')
-            
-            # If metadata looks good (and isn't just "Original Audio"), verify and return
-            if track and "Original Audio" not in track and artist:
-                print(f"✅ Metadata Match: {track} by {artist}")
-                spotify_result = search_spotify(track, artist)
-                if spotify_result:
-                    return spotify_result
-    except Exception as e:
-        print(f"⚠️ Metadata extraction skipped: {e}")
+    print(f"🚀 Processing: {request.url}")
 
-    # --- STEP 2: AI LISTENING (The Smart Path) ---
-    print("👂 Metadata failed. Switching to AI Listening...")
+    # 1. DOWNLOAD AUDIO (Force AI Listening)
     audio_filename = download_audio(request.url)
-    
     if not audio_filename:
-        raise HTTPException(status_code=500, detail="Failed to download audio from Instagram")
+        # Fallback error (client-side will handle 500)
+        raise HTTPException(status_code=500, detail="Audio download failed")
 
     try:
-        # Upload to Gemini
-        print("📤 Uploading audio to Gemini...")
+        # 2. ASK GEMINI (Strict Prompt)
+        print("🧠 Asking Gemini...")
         audio_file = genai.upload_file(path=audio_filename)
         
-        # Wait for processing
         while audio_file.state.name == "PROCESSING":
             time.sleep(1)
             audio_file = genai.get_file(audio_file.name)
 
-        # Prompt the AI
-        print("🧠 Asking Gemini...")
         model = genai.GenerativeModel('gemini-1.5-flash')
         response = model.generate_content([
-            "Listen to this audio. Identify the song name and artist. "
-            "Ignore remixes, speed changes, or voiceovers. "
-            "Return JSON: {'track': 'Name', 'artist': 'Name'}",
+            "Listen to this audio. Identify the ORIGINAL song name and artist. "
+            "Ignore remixes, speed up/slow down effects, or voiceovers. "
+            "If unsure, return null. Return JSON: {'track': 'Title', 'artist': 'Name'}",
             audio_file
         ])
         
-        # Parse AI Response
-        text_response = response.text.replace('```json', '').replace('```', '').strip()
-        ai_data = json.loads(text_response)
+        # Parse AI Result
+        cleaned_text = response.text.replace('```json', '').replace('```', '').strip()
+        try:
+             ai_data = json.loads(cleaned_text)
+        except:
+             # Resilience for bad JSON
+             import re
+             match = re.search(r'\{.*\}', cleaned_text, re.DOTALL)
+             ai_data = json.loads(match.group()) if match else {}
+
+        print(f"🤖 AI Identified: {ai_data}")
         
-        print(f"🤖 AI Found: {ai_data}")
-        
-        # Verify with Spotify
-        final_result = search_spotify(ai_data.get('track'), ai_data.get('artist'))
-        
-        # Cleanup
-        os.remove(audio_filename)
-        
-        if final_result:
-            return final_result
-        else:
-            return {"success": False, "error": "Song found by AI but not in Spotify"}
+        # Cleanup audio
+        if os.path.exists(audio_filename): os.remove(audio_filename)
+
+        if not ai_data.get('track'):
+            return {"success": False, "error": "AI could not identify song"}
+
+        # 3. VERIFY WITH SPOTIFY (Popularity Sort)
+        return search_spotify_strict(ai_data['track'], ai_data['artist'])
 
     except Exception as e:
-        print(f"❌ AI Error: {e}")
-        # Cleanup on error
-        if os.path.exists(audio_filename):
-            os.remove(audio_filename)
+        print(f"❌ Error: {e}")
+        if os.path.exists(audio_filename): os.remove(audio_filename)
         raise HTTPException(status_code=500, detail=str(e))
 
 def download_audio(url):
-    """Downloads Instagram audio to a temporary mp3 file"""
+    """Downloads Instagram audio. Falls back to direct format if FFmpeg is missing."""
     try:
         filename = f"temp_{int(time.time())}"
+        has_ffmpeg = shutil.which("ffmpeg") is not None
+        
         ydl_opts = {
-            'format': 'bestaudio/best',
-            'outtmpl': filename,
-            'postprocessors': [{
-                'key': 'FFmpegExtractAudio',
-                'preferredcodec': 'mp3',
-                'preferredquality': '128',
-            }],
-            'quiet': True,
-            'no_warnings': True,
+            'quiet': True, 'no_warnings': True,
         }
+
+        if has_ffmpeg:
+            print("🎞️ FFmpeg detected. Downloading mp3...")
+            ydl_opts.update({
+                'format': 'bestaudio/best',
+                'outtmpl': filename,
+                'postprocessors': [{'key': 'FFmpegExtractAudio','preferredcodec': 'mp3'}],
+            })
+        else:
+            print("⚠️ FFmpeg NOT detected. Downloading direct audio...")
+            ydl_opts.update({
+                'format': 'bestaudio',
+                'outtmpl': f"{filename}.%(ext)s",
+            })
+
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             ydl.download([url])
         
-        # Find the file (yt-dlp adds extensions)
         files = glob.glob(f"{filename}*")
         return files[0] if files else None
     except Exception as e:
         print(f"Download Error: {e}")
         return None
 
-def search_spotify(track, artist):
-    """Searches Spotify for the official track"""
-    if not track or not artist: return None
-    
-    query = f"track:{track} artist:{artist}"
-    results = sp.search(q=query, type='track', limit=1)
+def search_spotify_strict(track, artist):
+    # Search with keywords (broader than strict field match, but sorted by popularity)
+    query = f"{track} {artist}" 
+    results = sp.search(q=query, type='track', limit=5)
     items = results['tracks']['items']
     
-    if items:
-        song = items[0]
-        return {
-            "success": True,
-            "track": song['name'],
-            "artist": song['artists'][0]['name'],
-            "spotify_uri": song['uri'],
-            "spotify_url": song['external_urls']['spotify'],
-            "album_art": song['album']['images'][0]['url'],
-            "confidence": 0.95
-        }
-    return None
+    if not items: return {"success": False, "error": "Not found on Spotify"}
 
-if __name__ == "__main__":
-    import uvicorn
-    port = int(os.getenv("PORT", 8080))
-    uvicorn.run(app, host="0.0.0.0", port=port)
+    # SORT BY POPULARITY (Fixes the "Cover Song" issue)
+    items.sort(key=lambda x: x['popularity'], reverse=True)
+    best = items[0]
+    
+    print(f"🎯 Spotify Match (Popularity {best['popularity']}): {best['name']} by {best['artists'][0]['name']}")
+
+    return {
+        "success": True,
+        "track": best['name'],
+        "artist": best['artists'][0]['name'],
+        "album_art": best['album']['images'][0]['url'],
+        "spotify_uri": best['uri'],
+        "spotify_url": best['external_urls']['spotify'],
+        "confidence": 0.99
+    }
