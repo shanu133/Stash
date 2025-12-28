@@ -2,6 +2,7 @@ import { Trash2, Share2, ExternalLink } from 'lucide-react';
 import { Button } from './ui/button';
 import { Skeleton } from './ui/skeleton';
 import { Badge } from './ui/badge';
+import { toast } from 'sonner';
 
 interface Song {
   id: string;
@@ -10,6 +11,7 @@ interface Song {
   source: string;
   album_art_url: string;
   preview_url?: string;
+  spotify_url?: string;
 }
 
 interface HistoryListProps {
@@ -19,6 +21,31 @@ interface HistoryListProps {
 }
 
 export function HistoryList({ history, onDeleteSong, isLoading }: HistoryListProps) {
+  const handleShare = async (song: Song) => {
+    const url = song.spotify_url || `https://open.spotify.com/track/${song.id}`;
+    const text = `Check out "${song.song}" by ${song.artist} I found on Stash!`;
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: 'Stashed Song',
+          text: text,
+          url: url,
+        });
+      } catch (err) {
+        console.warn('Share failed:', err);
+      }
+    } else {
+      // Clipboard fallback
+      try {
+        await navigator.clipboard.writeText(`${text} ${url}`);
+        toast.success('Link copied to clipboard!');
+      } catch (err) {
+        toast.error('Could not copy link');
+      }
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="space-y-3">
@@ -70,7 +97,10 @@ export function HistoryList({ history, onDeleteSong, isLoading }: HistoryListPro
           className="group flex items-center gap-3 md:gap-4 p-3 md:p-4 bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all"
           style={{
             animationDelay: `${index * 50}ms`,
-            animation: 'slideInUp 0.3s ease-out forwards',
+            animationName: 'slideInUp',
+            animationDuration: '0.3s',
+            animationTimingFunction: 'ease-out',
+            animationFillMode: 'forwards',
           }}
         >
           <img
@@ -82,8 +112,8 @@ export function HistoryList({ history, onDeleteSong, isLoading }: HistoryListPro
             <h4 className="truncate text-sm md:text-base">{song.song}</h4>
             <p className="text-gray-400 truncate text-sm">{song.artist}</p>
             <div className="flex items-center gap-2 mt-1.5">
-              <Badge 
-                variant="outline" 
+              <Badge
+                variant="outline"
                 className={`text-xs border ${getSourceColor(song.source)}`}
               >
                 {song.source}
@@ -94,8 +124,8 @@ export function HistoryList({ history, onDeleteSong, isLoading }: HistoryListPro
             <Button
               variant="ghost"
               size="icon"
-              className="opacity-30 pointer-events-none h-9 w-9 md:h-10 md:w-10"
-              disabled
+              onClick={() => handleShare(song)}
+              className="hover:bg-white/10 transition-colors h-9 w-9 md:h-10 md:w-10"
             >
               <Share2 className="w-4 h-4" />
             </Button>
