@@ -1,5 +1,9 @@
 import { useState, useRef, useEffect } from 'react';
+<<<<<<< HEAD
 import { Play, Pause, CheckCircle2 } from 'lucide-react';
+=======
+import { Play, Pause, CheckCircle2, AlertTriangle, ExternalLink, Share2 } from 'lucide-react';
+>>>>>>> 36ab651fc45e4ea5236650b2c459320ba164a898
 import {
   Dialog,
   DialogContent,
@@ -110,9 +114,45 @@ export function ConfirmationModal({
     }
   };
 
+  const generateReceipt = async (elementId: string) => {
+    try {
+      const element = document.getElementById(elementId);
+      if (!element) return;
+
+      const canvas = await (window as any).html2canvas(element, {
+        useCORS: true,
+        backgroundColor: '#000000',
+        scale: 2 // High res
+      });
+
+      canvas.toBlob(async (blob: any) => {
+        if (!blob) return;
+
+        const file = new File([blob], 'stash_receipt.png', { type: 'image/png' });
+
+        // Mobile Share
+        if (navigator.share && navigator.canShare({ files: [file] })) {
+          await navigator.share({
+            files: [file],
+            title: 'Stash Receipt',
+            text: 'Found this gem on Stash! 💎'
+          });
+        } else {
+          // Desktop Download
+          const link = document.createElement('a');
+          link.download = 'stash_receipt.png';
+          link.href = canvas.toDataURL();
+          link.click();
+        }
+      });
+    } catch (err) {
+      console.error('Receipt Generation Failed:', err);
+    }
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="bg-black/95 backdrop-blur-xl text-white border-white/20 max-w-2xl">
+      <DialogContent className="sm:max-w-[425px] overflow-hidden p-0 gap-0 border-none bg-transparent shadow-none z-[130]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <CheckCircle2 className="w-5 h-5 text-[#1DB954]" />
@@ -125,6 +165,7 @@ export function ConfirmationModal({
         <div className="space-y-2 md:space-y-3 mt-4 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
           {matches.map((match, index) => (
             <div
+              id={`result-card-${match.id}`}
               key={match.id}
               className="group flex flex-col gap-3 p-4 bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 hover:bg-white/10 hover:border-[#1DB954]/50 transition-all"
               style={{
@@ -143,21 +184,28 @@ export function ConfirmationModal({
                   <p className="text-gray-400 truncate text-sm">{match.artist}</p>
                 </div>
                 <div className="flex items-center gap-2">
-                  {match.preview_url && (
+                  <div className="relative">
                     <Button
                       variant="outline"
                       size="icon"
+                      disabled={!match.preview_url}
                       onClick={() => handlePlayPause(match)}
+<<<<<<< HEAD
                       className="bg-white/10 border-white/20 hover:bg-white/20 hover:border-[#1DB954] transition-all h-10 w-10"
                       disabled={isSelecting}
+=======
+                      className={`bg-white/10 border-white/20 transition-all h-10 w-10 ${!match.preview_url ? 'opacity-30 cursor-not-allowed' : 'hover:bg-white/20 hover:border-[#1DB954]'
+                        }`}
+                      title={!match.preview_url ? "Preview unavailable on Spotify" : "Listen to preview"}
+>>>>>>> 36ab651fc45e4ea5236650b2c459320ba164a898
                     >
                       {playingId === match.id ? (
                         <Pause className="w-4 h-4 text-[#1DB954]" />
                       ) : (
-                        <Play className="w-4 h-4" />
+                        <Play className={`w-4 h-4 ${!match.preview_url ? 'text-gray-600' : ''}`} />
                       )}
                     </Button>
-                  )}
+                  </div>
                   <Button
                     onClick={() => handleSelect(match)}
                     className="bg-[#1DB954] hover:bg-[#1ed760] text-black shadow-lg shadow-[#1DB954]/20 hover:shadow-[#1DB954]/40 transition-all min-w-[80px]"
@@ -166,6 +214,18 @@ export function ConfirmationModal({
                     {isSelecting ? 'Wait...' : 'Select'}
                   </Button>
                 </div>
+              </div>
+
+              <div className="flex justify-end">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => generateReceipt(`result-card-${match.id}`)}
+                  className="text-gray-400 hover:text-white text-xs flex items-center gap-1.5"
+                >
+                  <Share2 className="w-3.5 h-3.5" />
+                  Share Receipt
+                </Button>
               </div>
               {playingId === match.id && (
                 <Progress

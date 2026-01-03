@@ -3,8 +3,17 @@ import react from '@vitejs/plugin-react-swc';
 import tailwindcss from '@tailwindcss/vite';
 import path from 'path';
 
+<<<<<<< HEAD
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+=======
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react-swc';
+import path from 'path';
+
+export default defineConfig({
+  plugins: [react()],
+>>>>>>> 36ab651fc45e4ea5236650b2c459320ba164a898
   resolve: {
     extensions: ['.js', '.jsx', '.ts', '.tsx', '.json'],
     alias: {
@@ -53,7 +62,11 @@ export default defineConfig({
   },
   build: {
     target: 'esnext',
+<<<<<<< HEAD
     outDir: 'build',
+=======
+    outDir: 'dist',
+>>>>>>> 36ab651fc45e4ea5236650b2c459320ba164a898
   },
   server: {
     port: 3000,

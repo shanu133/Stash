@@ -2,14 +2,20 @@ import { Music2, TrendingUp, Calendar } from 'lucide-react';
 
 interface QuickStatsProps {
   totalSongs: number;
+  songsThisWeek: number;
+  streak: number;
 }
 
+<<<<<<< HEAD
 export function QuickStats({ totalSongs, onClick }: { totalSongs: number; onClick?: () => void }) {
   // Mock data for now
+=======
+export function QuickStats({ totalSongs, songsThisWeek, streak }: QuickStatsProps) {
+>>>>>>> 36ab651fc45e4ea5236650b2c459320ba164a898
   const stats = {
     totalSongs,
-    thisWeek: Math.min(totalSongs, Math.floor(Math.random() * 10) + 1),
-    streak: Math.floor(Math.random() * 7) + 1,
+    thisWeek: songsThisWeek,
+    streak: streak,
   };
 
   return (

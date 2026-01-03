@@ -49,96 +49,12 @@ def health_check():
 from shazamio import Shazam
 
 @app.post("/recognize")
-<<<<<<< HEAD
-def recognize_reel(request: ReelRequest):
-    print(f"🚀 Processing URL: {request.url}")
-    
-    # --- STEP 1: METADATA CHECK (The Fast Path) ---
-    try:
-        ydl_opts = {
-            'quiet': True, 
-            'no_warnings': True,
-            'extract_flat': True, # Faster for metadata
-        }
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(request.url, download=False)
-            track = info.get('track') or info.get('title')
-            artist = info.get('artist') or info.get('uploader')
-            
-            # If metadata looks good (and isn't just "Original Audio"), verify and return
-            if track and "Original Audio" not in track and artist:
-                print(f"✅ Metadata Match: {track} by {artist}")
-                spotify_result = search_spotify(track, artist)
-                if spotify_result:
-                    return spotify_result
-    except Exception as e:
-        print(f"⚠️ Metadata extraction skipped: {e}")
-=======
 async def recognize_reel(request: ReelRequest):
     print(f"🚀 Processing: {request.url}")
->>>>>>> 36ab651fc45e4ea5236650b2c459320ba164a898
 
     # 1. DOWNLOAD AUDIO
     audio_filename = download_audio(request.url)
     if not audio_filename:
-<<<<<<< HEAD
-        raise HTTPException(status_code=500, detail="Failed to download audio")
-
-    try:
-        # Upload to Gemini
-        print(f"📤 Uploading audio {audio_filename} to Gemini...")
-        audio_file = genai.upload_file(path=audio_filename)
-        
-        # Wait for processing
-        count = 0
-        while audio_file.state.name == "PROCESSING" and count < 30:
-            time.sleep(1)
-            audio_file = genai.get_file(audio_file.name)
-            count += 1
-
-        if audio_file.state.name != "ACTIVE":
-            raise Exception("Gemini processing failed or timed out")
-
-        # Prompt the AI
-        print("🧠 Asking Gemini...")
-        model = genai.GenerativeModel('gemini-1.5-flash')
-        response = model.generate_content([
-            "Listen to this audio. Identify the song name and artist. "
-            "Ignore remixes, speed changes, or voiceovers. "
-            "Return ONLY JSON: {'track': 'Name', 'artist': 'Name'}",
-            audio_file
-        ])
-        
-        # Parse AI Response
-        text_response = response.text.strip()
-        if '```json' in text_response:
-            text_response = text_response.split('```json')[1].split('```')[0].strip()
-        elif '```' in text_response:
-             text_response = text_response.split('```')[1].split('```')[0].strip()
-        
-        ai_data = json.loads(text_response)
-        
-        print(f"🤖 AI Found: {ai_data}")
-        
-        # Verify with Spotify
-        final_result = search_spotify(ai_data.get('track'), ai_data.get('artist'))
-        
-        # Cleanup Gemini file
-        try:
-            genai.delete_file(audio_file.name)
-            print("🗑️ Gemini file deleted")
-        except:
-            pass
-
-        # Cleanup local file
-        if os.path.exists(audio_filename):
-            os.remove(audio_filename)
-        
-        if final_result:
-            return final_result
-        else:
-            return {"success": False, "error": "Song found by AI but not in Spotify"}
-=======
         raise HTTPException(status_code=500, detail="Audio download failed")
 
     try:
@@ -166,17 +82,17 @@ async def recognize_reel(request: ReelRequest):
         # 4. VERIFY WITH SPOTIFY (Get Playable URI)
         # We still search Spotify to get the URI for the frontend player/saving
         return search_spotify_strict(shazam_title, shazam_artist)
->>>>>>> 36ab651fc45e4ea5236650b2c459320ba164a898
 
     except Exception as e:
         print(f"❌ Error: {e}")
-        if os.path.exists(audio_filename): os.remove(audio_filename)
+        if audio_filename and os.path.exists(audio_filename): os.remove(audio_filename)
         raise HTTPException(status_code=500, detail=str(e))
 
 def download_audio(url):
-    """Downloads Instagram audio. Falls back to direct format if FFmpeg is missing."""
+    """Downloads Instagram audio to /tmp. Falls back to direct format if FFmpeg is missing."""
     try:
-        filename = f"temp_{int(time.time())}"
+        # Vercel: only /tmp is writable
+        filename = f"/tmp/temp_{int(time.time())}"
         has_ffmpeg = shutil.which("ffmpeg") is not None
         
         ydl_opts = {

@@ -21,6 +21,19 @@
       "purpose": "any maskable"
     }
   ],
+<<<<<<< HEAD
   "categories": ["music", "entertainment"],
   "screenshots": []
 }
+=======
+  "share_target": {
+    "action": "/",
+    "method": "GET",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "text"
+    }
+  }
+}
+>>>>>>> 36ab651fc45e4ea5236650b2c459320ba164a898

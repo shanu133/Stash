@@ -1,9 +1,16 @@
 import { Music, Zap, CheckCircle, Radio, Sun, Moon, Link2 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Switch } from './ui/switch';
+<<<<<<< HEAD
 import heroImage from '../assets/hero.jpg';
 import logoLight from '../assets/772b6607fed69ee0832a6f5e7102b5a6b45e84c2.png';
 import logoDark from '../assets/b659e78a263c10d9b32767464e4b074fdb043c31.png';
+=======
+import heroImage from '../assets/hero-image.jpg';
+const logoTransparent = "/branding/logo_transparent.png";
+const logoDark = "/branding/logo_dark.png";
+const logoLight = "/branding/logo_light.png";
+>>>>>>> 36ab651fc45e4ea5236650b2c459320ba164a898
 
 interface LandingViewProps {
   onConnect: () => void;
@@ -15,12 +22,13 @@ interface LandingViewProps {
 export function LandingView({ onConnect, theme, onToggleTheme, onNavigate }: LandingViewProps) {
   return (
     <div className="min-h-screen bg-white dark:bg-black text-gray-900 dark:text-white overflow-hidden noise-texture">
-      {/* Header with Logo Placeholder */}
-      <header className="fixed top-0 left-0 right-0 z-50 backdrop-blur-xl bg-white/80 dark:bg-black/80 border-b border-gray-200 dark:border-white/10">
-        <div className="container mx-auto px-4 md:px-6 py-4">
+      {/* Header with Logo */}
+      <header className="fixed top-0 left-0 right-0 z-50 backdrop-blur-xl bg-white/50 dark:bg-black/50 border-b border-gray-200/50 dark:border-white/5">
+        <div className="container mx-auto px-4 md:px-6 py-3">
           <div className="flex items-center justify-between">
-            {/* Logo Placeholder */}
+            {/* Logo Group */}
             <div className="flex items-center gap-3">
+<<<<<<< HEAD
               <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-gradient-to-br from-[#1DB954] to-[#1ed760] flex items-center justify-center shadow-lg shadow-[#1DB954]/20">
                 <Radio className="w-6 h-6 md:w-7 md:h-7 text-black" />
               </div>
@@ -42,32 +50,61 @@ export function LandingView({ onConnect, theme, onToggleTheme, onNavigate }: Lan
                 onClick={onConnect}
                 size="sm"
                 className="bg-[#1DB954] hover:bg-[#1ed760] text-black px-6 h-9 shadow-md hover:shadow-lg transition-all font-semibold"
+=======
+              <div className="w-9 h-9 flex items-center justify-center overflow-hidden">
+                <img
+                  src={theme === 'dark' ? logoDark : logoLight}
+                  alt="Stash Logo"
+                  className={`w-full h-full object-contain ${theme === 'dark' ? 'invert' : ''}`}
+                  style={theme === 'dark' ? { mixBlendMode: 'screen' } : { mixBlendMode: 'multiply' }}
+                />
+              </div>
+              <span className="text-[#1DB954] text-2xl font-bold tracking-tighter" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", sans-serif' }}>Stash</span>
+            </div>
+
+            {/* Actions Group */}
+            <div className="flex items-center gap-4 md:gap-8">
+              {/* Minimalistic Theme Toggle */}
+              <div className="flex items-center gap-2.5">
+                <Sun className={`w-3.5 h-3.5 transition-colors ${theme === 'light' ? 'text-[#1DB954]' : 'text-gray-500'}`} />
+                <Switch
+                  checked={theme === 'dark'}
+                  onCheckedChange={(checked: boolean) => onToggleTheme(checked ? 'dark' : 'light')}
+                  className="scale-90 data-[state=checked]:bg-[#1DB954]"
+                />
+                <Moon className={`w-3.5 h-3.5 transition-colors ${theme === 'dark' ? 'text-[#1DB954]' : 'text-gray-500'}`} />
+              </div>
+
+              {/* Connect Button */}
+              <Button
+                onClick={onConnect}
+                size="sm"
+                variant="outline"
+                className="hidden sm:flex items-center gap-2 bg-gray-50 dark:bg-zinc-900/50 border-gray-200 dark:border-white/10 text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-zinc-800 transition-all font-semibold px-5 rounded-full h-9 shadow-sm"
+              >
+                Connect
+              </Button>
+
+              {/* Mobile Connect (Icon or Smaller) */}
+              <Button
+                onClick={onConnect}
+                size="sm"
+                variant="outline"
+                className="flex sm:hidden bg-gray-50 dark:bg-zinc-900/50 border-gray-200 dark:border-white/10 text-gray-900 dark:text-white px-4 rounded-full h-9"
+>>>>>>> 36ab651fc45e4ea5236650b2c459320ba164a898
               >
                 Connect
               </Button>
             </div>
-
-            {/* Mobile: Simple Icon */}
-            <Button
-              onClick={() => onToggleTheme(theme === 'dark' ? 'light' : 'dark')}
-              variant="ghost"
-              size="icon"
-              className="md:hidden"
-            >
-              {theme === 'dark' ? (
-                <Sun className="w-5 h-5 text-gray-400" />
-              ) : (
-                <Moon className="w-5 h-5 text-gray-600" />
-              )}
-            </Button>
           </div>
         </div>
       </header>
 
+
       {/* Hero Section */}
-      <div className="relative pt-20 md:pt-24">
+      < div className="relative pt-20 md:pt-24" >
         {/* Hero Content - Image First */}
-        <div className="relative z-10 container mx-auto px-4 md:px-6 py-8 md:py-16">
+        < div className="relative z-10 container mx-auto px-4 md:px-6 py-8 md:py-16" >
           <div className="max-w-6xl mx-auto">
             {/* Hero Image */}
             <div className="mb-8 md:mb-12">
@@ -116,12 +153,17 @@ export function LandingView({ onConnect, theme, onToggleTheme, onNavigate }: Lan
               </div>
             </div>
           </div>
-        </div>
-      </div>
+        </div >
+      </div >
 
       {/* How It Works Section */}
+<<<<<<< HEAD
       <div id="how-it-works" className="relative z-10 container mx-auto px-4 md:px-6 py-16 md:py-24">
         <h2 className="text-center mb-12 md:mb-16 text-gray-900 dark:text-white text-3xl md:text-4xl" style={{ fontWeight: 700 }}>How It Works</h2>
+=======
+      < div id="how-it-works" className="relative z-10 container mx-auto px-4 md:px-6 py-16 md:py-24" >
+        <h2 className="text-center mb-12 md:mb-16 text-gray-900 dark:text-white" style={{ fontWeight: 700 }}>How It Works</h2>
+>>>>>>> 36ab651fc45e4ea5236650b2c459320ba164a898
 
         <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
           {/* Step 1 */}
@@ -157,10 +199,14 @@ export function LandingView({ onConnect, theme, onToggleTheme, onNavigate }: Lan
             </p>
           </div>
         </div>
-      </div>
+      </div >
 
       {/* Features Section */}
+<<<<<<< HEAD
       <div className="relative z-10 container mx-auto px-4 md:px-6 py-16 md:py-24 text-gray-900 dark:text-white">
+=======
+      < div className="relative z-10 container mx-auto px-4 md:px-6 py-16 md:py-24" >
+>>>>>>> 36ab651fc45e4ea5236650b2c459320ba164a898
         <div className="max-w-4xl mx-auto space-y-8">
           <h2 className="text-center mb-12 text-3xl md:text-4xl" style={{ fontWeight: 700 }}>Why Stash?</h2>
 
@@ -194,12 +240,18 @@ export function LandingView({ onConnect, theme, onToggleTheme, onNavigate }: Lan
             </div>
           </div>
         </div>
-      </div>
+      </div >
 
       {/* CTA Section */}
+<<<<<<< HEAD
       <div className="relative z-10 container mx-auto px-4 md:px-6 py-16 md:py-24 text-gray-900 dark:text-white">
         <div className="glass-card rounded-3xl p-12 md:p-16 text-center max-w-3xl mx-auto shadow-2xl border border-gray-200 dark:border-white/10">
           <h2 className="mb-6 text-3xl md:text-4xl" style={{ fontWeight: 700 }}>Ready to Start Stashing?</h2>
+=======
+      < div className="relative z-10 container mx-auto px-4 md:px-6 py-16 md:py-24" >
+        <div className="glass-card rounded-3xl p-12 md:p-16 text-center max-w-3xl mx-auto shadow-2xl">
+          <h2 className="mb-6 text-gray-900 dark:text-white" style={{ fontWeight: 700 }}>Ready to Start Stashing?</h2>
+>>>>>>> 36ab651fc45e4ea5236650b2c459320ba164a898
           <p className="text-gray-600 dark:text-gray-400 mb-8 text-lg">
             Connect your Spotify account and never lose a song again.
           </p>
@@ -211,10 +263,14 @@ export function LandingView({ onConnect, theme, onToggleTheme, onNavigate }: Lan
             Connect with Spotify
           </Button>
         </div>
-      </div>
+      </div >
 
       {/* Footer */}
+<<<<<<< HEAD
       <footer className="relative z-10 border-t border-gray-200 dark:border-white/10 py-8 text-gray-900 dark:text-white">
+=======
+      < footer className="relative z-10 border-t border-gray-200 dark:border-white/10 py-8" >
+>>>>>>> 36ab651fc45e4ea5236650b2c459320ba164a898
         <div className="container mx-auto px-4 md:px-6">
           <div className="flex flex-col items-center justify-center gap-4">
             <p className="text-gray-500 dark:text-gray-500 text-sm text-center">
@@ -245,10 +301,10 @@ export function LandingView({ onConnect, theme, onToggleTheme, onNavigate }: Lan
             </div>
           </div>
         </div>
-      </footer>
+      </footer >
 
       {/* Mobile CTA */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 p-4 bg-white/90 dark:bg-black/90 backdrop-blur-xl border-t border-gray-200 dark:border-white/10 z-50 pb-safe">
+      < div className="md:hidden fixed bottom-0 left-0 right-0 p-4 bg-white/90 dark:bg-black/90 backdrop-blur-xl border-t border-gray-200 dark:border-white/10 z-50 pb-safe" >
         <Button
           onClick={onConnect}
           className="w-full bg-[#1DB954] hover:bg-[#1ed760] text-black py-6 rounded-full shadow-lg shadow-[#1DB954]/20"
@@ -256,10 +312,10 @@ export function LandingView({ onConnect, theme, onToggleTheme, onNavigate }: Lan
         >
           ✨ Stash your first song
         </Button>
-      </div>
+      </div >
 
       {/* Mobile Theme Toggle Button */}
-      <div className="md:hidden fixed bottom-24 left-6 z-50">
+      < div className="md:hidden fixed bottom-24 left-6 z-50" >
         <Button
           onClick={() => onToggleTheme(theme === 'dark' ? 'light' : 'dark')}
           className="glass-card rounded-full w-14 h-14 flex items-center justify-center shadow-xl border-2 border-gray-300 dark:border-white/20"
@@ -272,6 +328,7 @@ export function LandingView({ onConnect, theme, onToggleTheme, onNavigate }: Lan
             <Moon className="w-5 h-5 text-purple-600" />
           )}
         </Button>
+<<<<<<< HEAD
       </div>
 
       {/* Debug Overlay */}
@@ -283,5 +340,9 @@ export function LandingView({ onConnect, theme, onToggleTheme, onNavigate }: Lan
         <p>Hash: {window.location.hash ? 'Present' : 'Empty'}</p>
       </div>
     </div>
+=======
+      </div >
+    </div >
+>>>>>>> 36ab651fc45e4ea5236650b2c459320ba164a898
   );
 }
