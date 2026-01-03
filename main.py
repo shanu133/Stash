@@ -47,7 +47,11 @@ def recognize_reel(request: ReelRequest):
     
     # --- STEP 1: METADATA CHECK (The Fast Path) ---
     try:
-        ydl_opts = {'quiet': True, 'no_warnings': True}
+        ydl_opts = {
+            'quiet': True, 
+            'no_warnings': True,
+            'extract_flat': True, # Faster for metadata
+        }
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(request.url, download=False)
             track = info.get('track') or info.get('title')
@@ -67,17 +71,22 @@ def recognize_reel(request: ReelRequest):
     audio_filename = download_audio(request.url)
     
     if not audio_filename:
-        raise HTTPException(status_code=500, detail="Failed to download audio from Instagram")
+        raise HTTPException(status_code=500, detail="Failed to download audio")
 
     try:
         # Upload to Gemini
-        print("📤 Uploading audio to Gemini...")
+        print(f"📤 Uploading audio {audio_filename} to Gemini...")
         audio_file = genai.upload_file(path=audio_filename)
         
         # Wait for processing
-        while audio_file.state.name == "PROCESSING":
+        count = 0
+        while audio_file.state.name == "PROCESSING" and count < 30:
             time.sleep(1)
             audio_file = genai.get_file(audio_file.name)
+            count += 1
+
+        if audio_file.state.name != "ACTIVE":
+            raise Exception("Gemini processing failed or timed out")
 
         # Prompt the AI
         print("🧠 Asking Gemini...")
@@ -85,12 +94,17 @@ def recognize_reel(request: ReelRequest):
         response = model.generate_content([
             "Listen to this audio. Identify the song name and artist. "
             "Ignore remixes, speed changes, or voiceovers. "
-            "Return JSON: {'track': 'Name', 'artist': 'Name'}",
+            "Return ONLY JSON: {'track': 'Name', 'artist': 'Name'}",
             audio_file
         ])
         
         # Parse AI Response
-        text_response = response.text.replace('```json', '').replace('```', '').strip()
+        text_response = response.text.strip()
+        if '```json' in text_response:
+            text_response = text_response.split('```json')[1].split('```')[0].strip()
+        elif '```' in text_response:
+             text_response = text_response.split('```')[1].split('```')[0].strip()
+        
         ai_data = json.loads(text_response)
         
         print(f"🤖 AI Found: {ai_data}")
@@ -98,8 +112,16 @@ def recognize_reel(request: ReelRequest):
         # Verify with Spotify
         final_result = search_spotify(ai_data.get('track'), ai_data.get('artist'))
         
-        # Cleanup
-        os.remove(audio_filename)
+        # Cleanup Gemini file
+        try:
+            genai.delete_file(audio_file.name)
+            print("🗑️ Gemini file deleted")
+        except:
+            pass
+
+        # Cleanup local file
+        if os.path.exists(audio_filename):
+            os.remove(audio_filename)
         
         if final_result:
             return final_result

@@ -6,6 +6,7 @@ const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<"input">>(
   ({ className, type, ...props }, ref) => {
     return (
       <input
+        ref={ref}
         type={type}
         data-slot="input"
         className={cn(
@@ -14,12 +15,12 @@ const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<"input">>(
           "aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive",
           className,
         )}
-        ref={ref}
         {...props}
       />
     );
-  },
+  }
 );
+
 Input.displayName = "Input";
 
 export { Input };

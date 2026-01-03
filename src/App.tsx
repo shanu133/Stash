@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { LandingView } from './components/LandingView';
 import { AppView } from './components/AppView';
 import { SettingsView } from './components/SettingsView';
@@ -7,37 +7,13 @@ import { AboutView } from './components/AboutView';
 import { HelpView } from './components/HelpView';
 import { StatsPageView } from './components/StatsPageView';
 import { ConfirmationModal } from './components/ConfirmationModal';
+import { ProcessingOverlay } from './components/ProcessingOverlay';
 import { PWAInstallPrompt } from './components/PWAInstallPrompt';
 import { PWARegistration } from './components/PWARegistration';
 import { Toaster } from './components/ui/sonner';
 import { toast } from 'sonner';
-import { api } from './lib/api';
+import { api, Song, SongMatch, Playlist } from './lib/api';
 import { supabase } from './lib/supabase';
-
-interface Song {
-  id: string;
-  song: string;
-  artist: string;
-  source: string;
-  album_art_url: string;
-  preview_url?: string;
-  created_at?: string;
-}
-
-interface SongMatch {
-  id: string;
-  song: string;
-  artist: string;
-  album_art_url: string;
-  preview_url?: string;
-  spotify_url?: string;
-  confidence?: number;
-}
-
-interface Playlist {
-  id: string;
-  name: string;
-}
 
 type ViewType = 'landing' | 'app' | 'settings' | 'privacy' | 'about' | 'help' | 'stats';
 
@@ -55,7 +31,9 @@ interface AppState {
   defaultPlaylistId: string;
   playlists: Playlist[];
   theme: 'light' | 'dark';
-  processingStatus: string;
+  isProcessing: boolean;
+  processingStage: 1 | 2 | 3 | 'success' | 'error';
+  processingError?: string;
 }
 
 export default function App() {
@@ -72,50 +50,52 @@ export default function App() {
       showModal: false,
       currentView: 'landing',
       isLoadingHistory: false,
-      autoAddTopMatch: false,
+      autoAddTopMatch: true, // Default to true as requested
       defaultPlaylistId: '1',
       playlists: [],
       theme: savedTheme || 'dark',
-      processingStatus: '',
+      isProcessing: false,
+      processingStage: 1,
+      processingError: undefined,
     };
   });
 
-  // Global Error Handler
-  useEffect(() => {
-    const handleError = (event: ErrorEvent) => {
-      console.error("Global Error Caught:", event.error);
-      toast.error(`App Error: ${event.message || 'Something went wrong'}`);
-    };
-    window.addEventListener('error', handleError);
-    return () => window.removeEventListener('error', handleError);
-  }, []);
+  const [pendingSharedUrl, setPendingSharedUrl] = useState<string | null>(null);
+  const sharedUrlRef = useRef<string | null>(null);
+  const stashSubmitRef = useRef<((url: string) => Promise<void>) | null>(null);
 
   // Handle Share Target on mount
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const sharedText = params.get('text') || params.get('url') || params.get('title');
+    const sharedUrlParam = params.get('url');
+    const sharedText = params.get('text') || params.get('title');
+    const payload = sharedUrlParam || sharedText;
 
-    const handleSharedContent = async (text: string) => {
-      const urlRegex = /(https?:\/\/[^\s]+)/g;
-      const matches = text.match(urlRegex);
-      if (matches && matches[0]) {
-        const reelUrl = matches[0];
-        // If not logged in, we might want to store it or prompt login
-        // For now, let's assume we proceed if we can
-        handleStashSubmit(reelUrl);
-      }
-    };
+    if (!payload || sharedUrlRef.current) return;
 
-    if (sharedText) {
-      handleSharedContent(sharedText);
-      // Clean up the URL
-      window.history.replaceState({}, document.title, "/");
-    }
+    const urlRegex = /(https?:\/\/[^\s]+)/g;
+    const matches = payload.match(urlRegex);
+    const cleanUrl = sharedUrlParam || (matches && matches[0]);
+
+    if (!cleanUrl) return;
+
+    sharedUrlRef.current = cleanUrl;
+    setPendingSharedUrl(cleanUrl);
+
+    // Clean the URL bar so refreshes don't resubmit the payload
+    window.history.replaceState({}, document.title, '/');
   }, []);
+
+  useEffect(() => {
+    if (!pendingSharedUrl || !state.isLoggedIn) return;
+
+    stashSubmitRef.current?.(pendingSharedUrl);
+    sharedUrlRef.current = null;
+    setPendingSharedUrl(null);
+  }, [pendingSharedUrl, state.isLoggedIn]);
 
   // Handle Auth Session
   useEffect(() => {
-    // 1. Initial Session Check
     const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
@@ -124,14 +104,10 @@ export default function App() {
     };
     checkSession();
 
-    // 2. Listen for Session Changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (_event, session) => {
         if (session) {
           handleAuthSuccess(session.user);
-        } else {
-          // Handled by handleLogout if manually triggered, 
-          // but good for token expiry
         }
       }
     );
@@ -140,9 +116,6 @@ export default function App() {
   }, []);
 
   const handleAuthSuccess = async (user: any) => {
-    console.log("Auth: Successful login for", user.email);
-
-    // Set basic info first so the UI transitions immediately
     setState((prev) => ({
       ...prev,
       isLoggedIn: true,
@@ -151,16 +124,34 @@ export default function App() {
       currentView: 'app',
     }));
 
-    // Then try to fetch enriched data in the background
     try {
       const playlists = await api.getUserPlaylists();
       setState((prev) => ({ ...prev, playlists }));
       loadHistory();
     } catch (err) {
-      console.warn("Auth: Failed to fetch enriched user data (playlists/history):", err);
-      // We don't block the UI here, the user is already in the app
+      console.warn("Auth: Failed to fetch enriched user data:", err);
     }
   };
+
+  // Load history when user logs in
+  useEffect(() => {
+    if (state.isLoggedIn && state.history.length === 0) {
+      loadHistory();
+    }
+  }, [state.isLoggedIn]);
+
+  // Apply theme to document and save to localStorage
+  useEffect(() => {
+    if (state.theme === 'dark') {
+      document.documentElement.classList.add('dark');
+      document.documentElement.classList.remove('light');
+    } else {
+      document.documentElement.classList.remove('dark');
+      document.documentElement.classList.add('light');
+    }
+    document.documentElement.className = state.theme;
+    localStorage.setItem('stash-theme', state.theme);
+  }, [state.theme]);
 
   const loadHistory = async () => {
     setState((prev) => ({ ...prev, isLoadingHistory: true }));
@@ -176,11 +167,9 @@ export default function App() {
 
   const handleConnectSpotify = async () => {
     try {
-      toast.loading('Redirecting to Spotify...');
       await api.connectSpotify();
     } catch (error) {
       console.error('Failed to connect:', error);
-      toast.dismiss();
       toast.error('Failed to connect to Spotify');
     }
   };
@@ -198,11 +187,13 @@ export default function App() {
         showModal: false,
         currentView: 'landing',
         isLoadingHistory: false,
-        autoAddTopMatch: false,
+        autoAddTopMatch: true,
         defaultPlaylistId: '1',
         playlists: [],
-        theme: state.theme, // Preserve theme on logout
-        processingStatus: '',
+        theme: state.theme,
+        isProcessing: false,
+        processingStage: 1,
+        processingError: undefined,
       });
       toast.success('Logged out successfully');
     } catch (error) {
@@ -213,43 +204,68 @@ export default function App() {
 
   const handleStashSubmit = async (url: string) => {
     try {
-      setState((prev) => ({ ...prev, currentUrl: url, processingStatus: 'Starting...' }));
+      setState((prev) => ({
+        ...prev,
+        currentUrl: url,
+        isProcessing: true,
+        processingStage: 1,
+        processingError: undefined
+      }));
 
       const matches = await api.stashUrl(url, (status) => {
-        setState((prev) => ({ ...prev, processingStatus: status }));
+        if (status === "Extracting Audio..." || status === "Downloading...") {
+          setState(prev => ({ ...prev, processingStage: 1 }));
+        } else if (status === "Identifying Song...") {
+          setState(prev => ({ ...prev, processingStage: 2 }));
+        } else if (status === "Verifying with Spotify...") {
+          setState(prev => ({ ...prev, processingStage: 3 }));
+        }
       });
 
-      if (state.autoAddTopMatch && matches.length > 0) {
-        // Auto-add the top match
-        await handleSongSelection(matches[0]);
-      } else {
-        // Show modal for selection
-        setState((prev) => ({
-          ...prev,
-          currentMatches: matches,
-          showModal: true,
-          processingStatus: '',
-        }));
-      }
+      setState((prev) => ({ ...prev, processingStage: 'success' }));
+
+      setTimeout(async () => {
+        setState((prev) => ({ ...prev, isProcessing: false, processingStage: 1 }));
+
+        if (state.autoAddTopMatch && matches.length > 0) {
+          await handleSongSelection(matches[0]);
+        } else {
+          setState((prev) => ({
+            ...prev,
+            currentMatches: matches,
+            showModal: true,
+          }));
+        }
+      }, 1000);
+
     } catch (error) {
       console.error('Failed to stash:', error);
-      setState((prev) => ({ ...prev, processingStatus: '' }));
+      setState((prev) => ({
+        ...prev,
+        processingStage: 'error',
+        processingError: 'Failed to find song. Please try again.'
+      }));
+
+      setTimeout(() => {
+        setState((prev) => ({
+          ...prev,
+          isProcessing: false,
+          processingStage: 1,
+          processingError: undefined
+        }));
+      }, 2000);
+
       toast.error('Failed to find song. Please try again.');
     }
   };
+  stashSubmitRef.current = handleStashSubmit;
 
   const handleSongSelection = async (song: SongMatch) => {
     try {
-      // Close modal
       setState((prev) => ({ ...prev, showModal: false }));
-
-      // Extract source from URL (simplified)
       const source = extractSource(state.currentUrl);
-
-      // Add track
       const newSong = await api.addTrack(song, source);
 
-      // Add to history
       setState((prev) => ({
         ...prev,
         history: [newSong, ...prev.history],
@@ -282,9 +298,7 @@ export default function App() {
     try {
       await api.updateUserPreferences({ autoAddTopMatch: value });
       setState((prev) => ({ ...prev, autoAddTopMatch: value }));
-      toast.success(
-        value ? 'Auto-add enabled' : 'Auto-add disabled'
-      );
+      toast.success(value ? 'Auto-add enabled' : 'Auto-add disabled');
     } catch (error) {
       console.error('Failed to update preferences:', error);
       toast.error('Failed to update preferences');
@@ -374,7 +388,7 @@ export default function App() {
             onToggleAutoAdd={handleToggleAutoAdd}
             onToggleTheme={handleToggleTheme}
             onOpenSettings={() => handleNavigate('settings')}
-            processingStatus={state.processingStatus}
+            onOpenStats={() => handleNavigate('stats')}
           />
         );
       case 'landing':
@@ -401,6 +415,17 @@ export default function App() {
         onSelectSong={handleSongSelection}
       />
 
+      <ProcessingOverlay
+        isVisible={state.isProcessing}
+        stage={state.processingStage}
+        errorMessage={state.processingError}
+        onClose={() => setState((prev) => ({
+          ...prev,
+          isProcessing: false,
+          processingStage: 1,
+          processingError: undefined
+        }))}
+      />
       <PWAInstallPrompt />
       <PWARegistration />
 

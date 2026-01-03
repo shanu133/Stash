@@ -1,16 +1,16 @@
-// API Service Layer - Integrated with Supabase and Railway
 import { supabase } from './supabase';
 
-interface Song {
+export interface Song {
   id: string;
   song: string;
   artist: string;
   source: string;
   album_art_url: string;
   preview_url?: string;
+  created_at?: string;
 }
 
-interface SongMatch {
+export interface SongMatch {
   id: string;
   song: string;
   artist: string;
@@ -20,72 +20,40 @@ interface SongMatch {
   confidence?: number;
 }
 
-// Mock data for development
-const mockSongs: Song[] = [
-  {
-    id: '1',
-    song: 'Blinding Lights',
-    artist: 'The Weeknd',
-    source: 'YouTube',
-    album_art_url: 'https://i.scdn.co/image/ab67616d0000b2738863bc11d2aa12b54f5aeb36',
-  },
-  {
-    id: '2',
-    song: 'levitating',
-    artist: 'Dua Lipa',
-    source: 'TikTok',
-    album_art_url: 'https://i.scdn.co/image/ab67616d0000b273be841ba4bc24340152e3a79a',
-  },
-  {
-    id: '3',
-    song: 'Heat Waves',
-    artist: 'Glass Animals',
-    source: 'Instagram',
-    album_art_url: 'https://i.scdn.co/image/ab67616d0000b273e5e5fa8e5b49b1e7cb3ab36b',
-  },
-];
+export interface Playlist {
+  id: string;
+  name: string;
+}
 
-const mockMatches: SongMatch[] = [
-  {
-    id: 'm1',
-    song: 'Example Song',
-    artist: 'Example Artist',
-    album_art_url: 'https://i.scdn.co/image/ab67616d0000b2738863bc11d2aa12b54f5aeb36',
-    preview_url: 'https://p.scdn.co/mp3-preview/a0e789e2d65d4d11e14e90f4e90e4e8e5f5f5f5f',
-  },
-  {
-    id: 'm2',
-    song: 'Example Song (Remix)',
-    artist: 'Example Artist',
-    album_art_url: 'https://i.scdn.co/image/ab67616d0000b273be841ba4bc24340152e3a79a',
-    preview_url: 'https://p.scdn.co/mp3-preview/b1f890f3e76e5e22f25f01f5f01f5f01f6f6f6f6',
-  },
-  {
-    id: 'm3',
-    song: 'Example Song (Live)',
-    artist: 'Example Artist',
-    album_art_url: 'https://i.scdn.co/image/ab67616d0000b273e5e5fa8e5b49b1e7cb3ab36b',
-  },
-];
+const API_BASE_URL = "https://stash-production-ed8d.up.railway.app";
 
 export const api = {
   async connectSpotify(): Promise<void> {
     const redirectUrl = window.location.origin;
 
     try {
+      console.log('API: Initiating Spotify OAuth manually...');
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'spotify',
         options: {
           scopes: 'user-library-read user-library-modify playlist-read-private playlist-modify-public',
           redirectTo: redirectUrl,
+          skipBrowserRedirect: true, // Manual redirect is more reliable in various browsers
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('API: Supabase Auth Error:', error);
+        throw error;
+      }
 
       if (data?.url) {
+        console.log('API: Redirecting to:', data.url);
         window.location.assign(data.url);
+      } else {
+        throw new Error('No redirect URL returned from Supabase');
       }
+
     } catch (err: any) {
       console.error('API: connectSpotify() error:', err);
       throw err;
@@ -100,14 +68,10 @@ export const api = {
 
   async stashUrl(url: string, onStatusUpdate?: (status: string) => void): Promise<SongMatch[]> {
     console.log('API: stashUrl()', url);
-    const API_BASE_URL = "https://stash-production-ed8d.up.railway.app";
 
-    // Exact status timings as requested
+    // Provide some status updates if callback provided
     if (onStatusUpdate) {
-      onStatusUpdate("Downloading Reel...");
-      setTimeout(() => onStatusUpdate("Extracting Audio..."), 2000);
-      setTimeout(() => onStatusUpdate("Identifying Song..."), 4000);
-      setTimeout(() => onStatusUpdate("Verifying with Spotify..."), 7000);
+      onStatusUpdate("Downloading...");
     }
 
     try {
@@ -121,14 +85,13 @@ export const api = {
 
       const data = await response.json();
 
-      // Adaptation: backend returns a single result, but UI expects an array of SongMatch
       if (data.success) {
         return [{
           id: data.spotify_uri || Date.now().toString(),
           song: data.track,
           artist: data.artist,
           album_art_url: data.album_art,
-          preview_url: '', // Add mapping if available
+          preview_url: data.preview_url || '',
           spotify_url: data.spotify_url,
           confidence: data.confidence
         }];
@@ -214,9 +177,9 @@ export const api = {
     };
   },
 
-  async getUserPlaylists(): Promise<Array<{ id: string; name: string }>> {
+  async getUserPlaylists(): Promise<Playlist[]> {
     console.log('API: getUserPlaylists()');
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    // For now, return mock playlists until Spotify token refresh is handled
     return [
       { id: '1', name: 'Liked Songs' },
       { id: '2', name: 'My Stash' },
@@ -225,4 +188,19 @@ export const api = {
       { id: '5', name: 'Workout Mix' },
     ];
   },
+
+  async getVibeAnalysis(history: any[]): Promise<string> {
+    try {
+      const songs = history.slice(0, 15).map(s => `${s.song} by ${s.artist}`);
+      const response = await fetch(`${API_BASE_URL}/analyze_vibe`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ songs })
+      });
+      const data = await response.json();
+      return data.vibe || "Eclectic and mysterious.";
+    } catch (err) {
+      return "Eclectic and mysterious.";
+    }
+  }
 };

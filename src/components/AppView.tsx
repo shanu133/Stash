@@ -7,6 +7,7 @@ import { Switch } from './ui/switch';
 import { HistoryList } from './HistoryList';
 import { QuickStats } from './QuickStats';
 import { FloatingStashButton } from './FloatingStashButton';
+import { AchievementBanner } from './AchievementBanner';
 import { useIsMobile } from './ui/use-mobile';
 import { Sheet, SheetContent, SheetTrigger } from './ui/sheet';
 import { Avatar, AvatarFallback } from './ui/avatar';
@@ -31,7 +32,7 @@ interface AppViewProps {
   onToggleAutoAdd: (value: boolean) => void;
   onToggleTheme: (value: 'light' | 'dark') => void;
   onOpenSettings: () => void;
-  processingStatus?: string;
+  onOpenStats: () => void;
 }
 
 export function AppView({
@@ -45,7 +46,7 @@ export function AppView({
   onToggleAutoAdd,
   onToggleTheme,
   onOpenSettings,
-  processingStatus,
+  onOpenStats,
 }: AppViewProps) {
   const [url, setUrl] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -78,44 +79,51 @@ export function AppView({
           <div className="flex items-center justify-between">
             {/* Logo */}
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg bg-gradient-to-br from-[#1DB954] to-[#1ed760] flex items-center justify-center shadow-lg">
+              <div className="w-8 h-8 md:w-10 md:h-10 rounded-xl bg-gradient-to-br from-[#1DB954] to-[#1ed760] flex items-center justify-center shadow-lg shadow-[#1DB954]/20">
                 <Radio className="w-5 h-5 md:w-6 md:h-6 text-black" />
               </div>
-              <span className="text-[#1DB954] hidden sm:inline drop-shadow-sm" style={{ fontWeight: 600 }}>Stash</span>
+              <span className="text-xl md:text-2xl text-[#1DB954] hidden sm:inline" style={{ fontWeight: 700, letterSpacing: '-0.02em' }}>Stash</span>
             </div>
 
             {/* Desktop Navigation */}
             <div className="hidden md:flex items-center gap-4">
+              {/* Theme Toggle Switch */}
+              <div className="flex items-center gap-2 px-3 py-2 rounded-full bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10">
+                <Sun className="w-4 h-4 text-gray-500 dark:text-gray-600" />
+                <Switch
+                  checked={theme === 'dark'}
+                  onCheckedChange={(checked) => onToggleTheme(checked ? 'dark' : 'light')}
+                  className="data-[state=checked]:bg-[#1DB954]"
+                />
+                <Moon className="w-4 h-4 text-gray-400 dark:text-white" />
+              </div>
+
               <Button
                 variant="ghost"
-                className="opacity-50 pointer-events-none text-gray-500"
-                disabled
+                size="sm"
+                onClick={onOpenStats}
+                className="text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10"
               >
-                <BarChart3 className="w-4 h-4 mr-2" />
-                Stats
+                <BarChart3 className="w-4 h-4" />
               </Button>
-              <Avatar className="w-8 h-8">
-                <AvatarFallback className="bg-[#1DB954]/20 text-[#1DB954]">
+
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onOpenSettings}
+                className="text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10"
+              >
+                <Settings className="w-4 h-4" />
+              </Button>
+
+              <div className="w-px h-6 bg-gray-200 dark:bg-white/10" />
+
+              <Avatar className="w-8 h-8 ring-2 ring-[#1DB954]/20">
+                <AvatarFallback className="bg-gradient-to-br from-[#1DB954] to-[#1ed760] text-black font-semibold">
                   {userName.charAt(0).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
-              <span className="text-gray-700 dark:text-gray-400">{userName}</span>
-              <Button
-                onClick={onOpenSettings}
-                variant="ghost"
-                className="hover:bg-gray-100 dark:hover:bg-white/10"
-              >
-                <Settings className="w-4 h-4 mr-2" />
-                Settings
-              </Button>
-              <Button
-                onClick={onLogout}
-                variant="ghost"
-                className="hover:bg-gray-100 dark:hover:bg-white/10"
-              >
-                <LogOut className="w-4 h-4 mr-2" />
-                Logout
-              </Button>
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{userName}</span>
             </div>
 
             {/* Mobile Menu */}
@@ -148,12 +156,12 @@ export function AppView({
                       Settings
                     </Button>
                     <Button
+                      onClick={onOpenStats}
                       variant="ghost"
-                      className="justify-start opacity-50 pointer-events-none"
-                      disabled
+                      className="justify-start hover:bg-gray-100 dark:hover:bg-white/10"
                     >
                       <BarChart3 className="w-5 h-5 mr-3" />
-                      Stats (Coming Soon)
+                      Stats
                     </Button>
                     <Button
                       onClick={onLogout}
@@ -174,7 +182,10 @@ export function AppView({
       {/* Main Content */}
       <div className="container mx-auto px-4 md:px-6 py-6 md:py-12 max-w-4xl">
         {/* Quick Stats */}
-        <QuickStats totalSongs={history.length} />
+        <QuickStats totalSongs={history.length} onClick={onOpenStats} />
+
+        {/* Achievement Banner */}
+        <AchievementBanner totalSongs={history.length} />
 
         {/* Stash Form */}
         <div className="mb-8 md:mb-12">
@@ -274,7 +285,7 @@ export function AppView({
                 <Switch
                   id="theme-toggle"
                   checked={theme === 'dark'}
-                  onCheckedChange={(checked: boolean) => onToggleTheme(checked ? 'dark' : 'light')}
+                  onCheckedChange={(checked) => onToggleTheme(checked ? 'dark' : 'light')}
                   className="data-[state=checked]:bg-[#1DB954] mt-1"
                 />
               </div>
@@ -299,8 +310,8 @@ export function AppView({
                   onClick={() => onToggleAutoAdd(!autoAddTopMatch)}
                   variant="outline"
                   className={`w-full h-12 rounded-xl transition-all ${autoAddTopMatch
-                    ? 'bg-[#1DB954]/20 border-[#1DB954] text-[#1DB954] hover:bg-[#1DB954]/30'
-                    : 'border-gray-300 dark:border-white/20 hover:bg-gray-100 dark:hover:bg-white/5'
+                      ? 'bg-[#1DB954]/20 border-[#1DB954] text-[#1DB954] hover:bg-[#1DB954]/30'
+                      : 'border-gray-300 dark:border-white/20 hover:bg-gray-100 dark:hover:bg-white/5'
                     }`}
                 >
                   {autoAddTopMatch ? (
@@ -345,34 +356,6 @@ export function AppView({
 
       {/* Floating Stash Button - Mobile Only */}
       {isMobile && <FloatingStashButton onClick={handleFloatingButtonClick} />}
-
-      {/* Processing Overlay */}
-      {processingStatus && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md transition-all animate-in fade-in">
-          <div className="text-center space-y-6 p-8 rounded-3xl bg-white/5 border border-white/10 shadow-2xl scale-in-center">
-            <div className="relative w-24 h-24 mx-auto">
-              <div className="absolute inset-0 rounded-full border-4 border-[#1DB954]/20"></div>
-              <div className="absolute inset-0 rounded-full border-4 border-t-[#1DB954] border-r-[#1DB954] animate-spin"></div>
-              <Sparkles className="absolute inset-0 m-auto w-10 h-10 text-[#1DB954] animate-pulse" />
-            </div>
-            <div className="space-y-2">
-              <h3 className="text-2xl font-bold text-white">Stashing...</h3>
-              <p className="text-[#1DB954] font-medium tracking-wide animate-pulse h-6">
-                {processingStatus}
-              </p>
-            </div>
-            <div className="flex gap-2 justify-center">
-              {[0, 1, 2].map((i) => (
-                <div
-                  key={i}
-                  className="w-2 h-2 rounded-full bg-[#1DB954] animate-bounce"
-                  style={{ animationDelay: `${i * 0.15}s` }}
-                />
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

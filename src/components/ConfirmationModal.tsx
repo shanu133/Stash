@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Play, Pause, CheckCircle2, AlertTriangle, ExternalLink } from 'lucide-react';
+import { Play, Pause, CheckCircle2 } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -16,8 +16,6 @@ interface SongMatch {
   artist: string;
   album_art_url: string;
   preview_url?: string;
-  spotify_url?: string;
-  confidence?: number;
 }
 
 interface ConfirmationModalProps {
@@ -85,15 +83,31 @@ export function ConfirmationModal({
     };
   };
 
-  const handleSelect = (match: SongMatch) => {
-    // Stop audio
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current = null;
+  const [isSelecting, setIsSelecting] = useState(false);
+
+  const handleSelect = async (match: SongMatch) => {
+    if (isSelecting) return;
+
+    console.log('ConfirmationModal: handleSelect clicked for:', match.song);
+    setIsSelecting(true);
+
+    try {
+      // Stop audio
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
+      setPlayingId(null);
+      setProgress(0);
+
+      console.log('ConfirmationModal: Calling onSelectSong...');
+      await onSelectSong(match);
+      console.log('ConfirmationModal: onSelectSong completed');
+    } catch (err) {
+      console.error('ConfirmationModal: Error in handleSelect:', err);
+    } finally {
+      setIsSelecting(false);
     }
-    setPlayingId(null);
-    setProgress(0);
-    onSelectSong(match);
   };
 
   return (
@@ -126,27 +140,7 @@ export function ConfirmationModal({
                 />
                 <div className="flex-1 min-w-0">
                   <h4 className="truncate text-sm md:text-base">{match.song}</h4>
-                  <div className="flex items-center gap-2">
-                    <p className="text-gray-400 truncate text-sm">{match.artist}</p>
-                    {match.spotify_url && (
-                      <a
-                        href={match.spotify_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-gray-500 hover:text-[#1DB954] transition-colors"
-                      >
-                        <ExternalLink className="w-3.5 h-3.5" />
-                      </a>
-                    )}
-                  </div>
-                  {match.confidence !== undefined && match.confidence < 0.7 && (
-                    <div className="flex items-center gap-1 mt-1">
-                      <AlertTriangle className="w-3 h-3 text-yellow-500" />
-                      <span className="text-[10px] text-yellow-500 font-medium uppercase tracking-wider">
-                        Low Confidence Match
-                      </span>
-                    </div>
-                  )}
+                  <p className="text-gray-400 truncate text-sm">{match.artist}</p>
                 </div>
                 <div className="flex items-center gap-2">
                   {match.preview_url && (
@@ -155,6 +149,7 @@ export function ConfirmationModal({
                       size="icon"
                       onClick={() => handlePlayPause(match)}
                       className="bg-white/10 border-white/20 hover:bg-white/20 hover:border-[#1DB954] transition-all h-10 w-10"
+                      disabled={isSelecting}
                     >
                       {playingId === match.id ? (
                         <Pause className="w-4 h-4 text-[#1DB954]" />
@@ -165,9 +160,10 @@ export function ConfirmationModal({
                   )}
                   <Button
                     onClick={() => handleSelect(match)}
-                    className="bg-[#1DB954] hover:bg-[#1ed760] text-black shadow-lg shadow-[#1DB954]/20 hover:shadow-[#1DB954]/40 transition-all"
+                    className="bg-[#1DB954] hover:bg-[#1ed760] text-black shadow-lg shadow-[#1DB954]/20 hover:shadow-[#1DB954]/40 transition-all min-w-[80px]"
+                    disabled={isSelecting}
                   >
-                    Select
+                    {isSelecting ? 'Wait...' : 'Select'}
                   </Button>
                 </div>
               </div>

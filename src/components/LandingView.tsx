@@ -1,8 +1,9 @@
 import { Music, Zap, CheckCircle, Radio, Sun, Moon, Link2 } from 'lucide-react';
 import { Button } from './ui/button';
-import heroImage from '../assets/hero-image.jpg';
-const logoLight = "https://placehold.co/100x100";
-const logoDark = "https://placehold.co/100x100/000000/FFF";
+import { Switch } from './ui/switch';
+import heroImage from '../assets/hero.jpg';
+import logoLight from '../assets/772b6607fed69ee0832a6f5e7102b5a6b45e84c2.png';
+import logoDark from '../assets/b659e78a263c10d9b32767464e4b074fdb043c31.png';
 
 interface LandingViewProps {
   onConnect: () => void;
@@ -20,30 +21,27 @@ export function LandingView({ onConnect, theme, onToggleTheme, onNavigate }: Lan
           <div className="flex items-center justify-between">
             {/* Logo Placeholder */}
             <div className="flex items-center gap-3">
-              <img
-                src={theme === 'dark' ? logoDark : logoLight}
-                alt="Stash Logo"
-                className="w-12 h-12 md:w-14 md:h-14 object-contain"
-              />
-              <span className="text-[#1DB954] text-xl" style={{ fontWeight: 600 }}>Stash</span>
+              <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-gradient-to-br from-[#1DB954] to-[#1ed760] flex items-center justify-center shadow-lg shadow-[#1DB954]/20">
+                <Radio className="w-6 h-6 md:w-7 md:h-7 text-black" />
+              </div>
+              <span className="text-2xl md:text-3xl text-[#1DB954]" style={{ fontWeight: 700, letterSpacing: '-0.02em' }}>Stash</span>
             </div>
 
-            {/* Desktop: Pixel Art Toggle */}
+            {/* Desktop: Clean Theme Toggle + Connect Button */}
             <div className="hidden md:flex items-center gap-3">
-              <label className="pixel-switch">
-                <input
-                  type="checkbox"
-                  className="pixel-toggle"
+              <div className="flex items-center gap-2 px-3 py-2 rounded-full bg-white/80 dark:bg-white/5 border border-gray-200 dark:border-white/10">
+                <Sun className="w-4 h-4 text-gray-500 dark:text-gray-600" />
+                <Switch
                   checked={theme === 'dark'}
-                  onChange={(e) => onToggleTheme(e.target.checked ? 'dark' : 'light')}
+                  onCheckedChange={(checked: boolean) => onToggleTheme(checked ? 'dark' : 'light')}
+                  className="data-[state=checked]:bg-[#1DB954]"
                 />
-                <span className="pixel-slider"></span>
-                <span className="card-side"></span>
-              </label>
+                <Moon className="w-4 h-4 text-gray-400 dark:text-white" />
+              </div>
               <Button
                 onClick={onConnect}
                 size="sm"
-                className="glass-light text-gray-900 dark:text-white border border-gray-200 dark:border-white/20 backdrop-blur-sm hover:bg-gray-100 dark:hover:bg-white/10 h-8 px-3 text-sm"
+                className="bg-[#1DB954] hover:bg-[#1ed760] text-black px-6 h-9 shadow-md hover:shadow-lg transition-all font-semibold"
               >
                 Connect
               </Button>
@@ -73,7 +71,7 @@ export function LandingView({ onConnect, theme, onToggleTheme, onNavigate }: Lan
           <div className="max-w-6xl mx-auto">
             {/* Hero Image */}
             <div className="mb-8 md:mb-12">
-              <div className="glass-card rounded-3xl overflow-hidden shadow-2xl max-w-md md:max-w-2xl mx-auto p-0">
+              <div className="glass-card rounded-3xl overflow-hidden shadow-2xl max-w-md md:max-w-2xl mx-auto p-0 border border-white/20">
                 <img
                   src={heroImage}
                   alt="Vinyl records with headphones"
@@ -123,37 +121,37 @@ export function LandingView({ onConnect, theme, onToggleTheme, onNavigate }: Lan
 
       {/* How It Works Section */}
       <div id="how-it-works" className="relative z-10 container mx-auto px-4 md:px-6 py-16 md:py-24">
-        <h2 className="text-center mb-12 md:mb-16 text-gray-900 dark:text-white" style={{ fontWeight: 700 }}>How It Works</h2>
+        <h2 className="text-center mb-12 md:mb-16 text-gray-900 dark:text-white text-3xl md:text-4xl" style={{ fontWeight: 700 }}>How It Works</h2>
 
         <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
           {/* Step 1 */}
-          <div className="glass-card rounded-2xl p-8 text-center shadow-lg">
+          <div className="glass-card rounded-2xl p-8 text-center shadow-lg border border-gray-200 dark:border-white/10">
             <div className="w-16 h-16 mx-auto mb-6 bg-[#1DB954]/10 rounded-2xl flex items-center justify-center">
               <Link2 className="w-8 h-8 text-[#1DB954]" />
             </div>
-            <h3 className="mb-4 text-gray-900 dark:text-white" style={{ fontWeight: 600 }}>Find Any Song</h3>
+            <h3 className="mb-4 text-gray-900 dark:text-white text-xl" style={{ fontWeight: 600 }}>Find Any Song</h3>
             <p className="text-gray-600 dark:text-gray-400">
               Discover music anywhere on the internet—YouTube, TikTok, Instagram, or any website.
             </p>
           </div>
 
           {/* Step 2 */}
-          <div className="glass-card rounded-2xl p-8 text-center shadow-lg">
+          <div className="glass-card rounded-2xl p-8 text-center shadow-lg border border-gray-200 dark:border-white/10">
             <div className="w-16 h-16 mx-auto mb-6 bg-[#1DB954]/10 rounded-2xl flex items-center justify-center">
               <Zap className="w-8 h-8 text-[#1DB954]" />
             </div>
-            <h3 className="mb-4 text-gray-900 dark:text-white" style={{ fontWeight: 600 }}>Paste the Link</h3>
+            <h3 className="mb-4 text-gray-900 dark:text-white text-xl" style={{ fontWeight: 600 }}>Paste the Link</h3>
             <p className="text-gray-600 dark:text-gray-400">
               Copy the URL and paste it into Stash. We'll instantly find the perfect match.
             </p>
           </div>
 
           {/* Step 3 */}
-          <div className="glass-card rounded-2xl p-8 text-center shadow-lg">
+          <div className="glass-card rounded-2xl p-8 text-center shadow-lg border border-gray-200 dark:border-white/10">
             <div className="w-16 h-16 mx-auto mb-6 bg-[#1DB954]/10 rounded-2xl flex items-center justify-center">
               <CheckCircle className="w-8 h-8 text-[#1DB954]" />
             </div>
-            <h3 className="mb-4 text-gray-900 dark:text-white" style={{ fontWeight: 600 }}>Save to Spotify</h3>
+            <h3 className="mb-4 text-gray-900 dark:text-white text-xl" style={{ fontWeight: 600 }}>Save to Spotify</h3>
             <p className="text-gray-600 dark:text-gray-400">
               The song is automatically added to your Spotify library. Done!
             </p>
@@ -162,34 +160,34 @@ export function LandingView({ onConnect, theme, onToggleTheme, onNavigate }: Lan
       </div>
 
       {/* Features Section */}
-      <div className="relative z-10 container mx-auto px-4 md:px-6 py-16 md:py-24">
+      <div className="relative z-10 container mx-auto px-4 md:px-6 py-16 md:py-24 text-gray-900 dark:text-white">
         <div className="max-w-4xl mx-auto space-y-8">
-          <h2 className="text-center mb-12 text-gray-900 dark:text-white" style={{ fontWeight: 700 }}>Why Stash?</h2>
+          <h2 className="text-center mb-12 text-3xl md:text-4xl" style={{ fontWeight: 700 }}>Why Stash?</h2>
 
           <div className="grid md:grid-cols-2 gap-6">
-            <div className="glass-card rounded-xl p-6 shadow-lg">
-              <h3 className="mb-3 text-gray-900 dark:text-white" style={{ fontWeight: 600 }}>🎵 Universal Music Discovery</h3>
+            <div className="glass-card rounded-xl p-6 shadow-lg border border-gray-200 dark:border-white/10">
+              <h3 className="mb-3 text-xl" style={{ fontWeight: 600 }}>🎵 Universal Music Discovery</h3>
               <p className="text-gray-600 dark:text-gray-400">
                 No more switching between apps. Save songs from anywhere, instantly.
               </p>
             </div>
 
-            <div className="glass-card rounded-xl p-6 shadow-lg">
-              <h3 className="mb-3 text-gray-900 dark:text-white" style={{ fontWeight: 600 }}>⚡ Lightning Fast</h3>
+            <div className="glass-card rounded-xl p-6 shadow-lg border border-gray-200 dark:border-white/10">
+              <h3 className="mb-3 text-xl" style={{ fontWeight: 600 }}>⚡ Lightning Fast</h3>
               <p className="text-gray-600 dark:text-gray-400">
                 Our AI matches songs in seconds, so you never lose track of a discovery.
               </p>
             </div>
 
-            <div className="glass-card rounded-xl p-6 shadow-lg">
-              <h3 className="mb-3 text-gray-900 dark:text-white" style={{ fontWeight: 600 }}>🎯 Perfect Matches</h3>
+            <div className="glass-card rounded-xl p-6 shadow-lg border border-gray-200 dark:border-white/10">
+              <h3 className="mb-3 text-xl" style={{ fontWeight: 600 }}>🎯 Perfect Matches</h3>
               <p className="text-gray-600 dark:text-gray-400">
                 Preview and confirm the right version before adding to your library.
               </p>
             </div>
 
-            <div className="glass-card rounded-xl p-6 shadow-lg">
-              <h3 className="mb-3 text-gray-900 dark:text-white" style={{ fontWeight: 600 }}>📱 Works Everywhere</h3>
+            <div className="glass-card rounded-xl p-6 shadow-lg border border-gray-200 dark:border-white/10">
+              <h3 className="mb-3 text-xl" style={{ fontWeight: 600 }}>📱 Works Everywhere</h3>
               <p className="text-gray-600 dark:text-gray-400">
                 Desktop, mobile, or tablet. Stash works seamlessly on all your devices.
               </p>
@@ -199,15 +197,15 @@ export function LandingView({ onConnect, theme, onToggleTheme, onNavigate }: Lan
       </div>
 
       {/* CTA Section */}
-      <div className="relative z-10 container mx-auto px-4 md:px-6 py-16 md:py-24">
-        <div className="glass-card rounded-3xl p-12 md:p-16 text-center max-w-3xl mx-auto shadow-2xl">
-          <h2 className="mb-6 text-gray-900 dark:text-white" style={{ fontWeight: 700 }}>Ready to Start Stashing?</h2>
+      <div className="relative z-10 container mx-auto px-4 md:px-6 py-16 md:py-24 text-gray-900 dark:text-white">
+        <div className="glass-card rounded-3xl p-12 md:p-16 text-center max-w-3xl mx-auto shadow-2xl border border-gray-200 dark:border-white/10">
+          <h2 className="mb-6 text-3xl md:text-4xl" style={{ fontWeight: 700 }}>Ready to Start Stashing?</h2>
           <p className="text-gray-600 dark:text-gray-400 mb-8 text-lg">
             Connect your Spotify account and never lose a song again.
           </p>
           <Button
             onClick={onConnect}
-            className="bg-[#1DB954] hover:bg-[#1ed760] text-black px-12 py-7 rounded-full transition-all shadow-2xl shadow-[#1DB954]/20 hover:shadow-[#1DB954]/40 hover:scale-105"
+            className="bg-[#1DB954] hover:bg-[#1ed760] text-black px-12 py-7 rounded-full transition-all shadow-2xl shadow-[#1DB954]/20 hover:shadow-[#1DB954]/40 hover:scale-105 text-lg"
             style={{ fontWeight: 600 }}
           >
             Connect with Spotify
@@ -216,7 +214,7 @@ export function LandingView({ onConnect, theme, onToggleTheme, onNavigate }: Lan
       </div>
 
       {/* Footer */}
-      <footer className="relative z-10 border-t border-gray-200 dark:border-white/10 py-8">
+      <footer className="relative z-10 border-t border-gray-200 dark:border-white/10 py-8 text-gray-900 dark:text-white">
         <div className="container mx-auto px-4 md:px-6">
           <div className="flex flex-col items-center justify-center gap-4">
             <p className="text-gray-500 dark:text-gray-500 text-sm text-center">
@@ -274,6 +272,15 @@ export function LandingView({ onConnect, theme, onToggleTheme, onNavigate }: Lan
             <Moon className="w-5 h-5 text-purple-600" />
           )}
         </Button>
+      </div>
+
+      {/* Debug Overlay */}
+      <div className="fixed bottom-4 right-4 z-[100] bg-black/80 text-white p-4 rounded-lg text-xs font-mono max-w-sm pointer-events-none">
+        <p className="font-bold text-[#1DB954]">Debug Status:</p>
+        <p>Theme: {theme}</p>
+        <p>Supabase: {import.meta.env.VITE_SUPABASE_URL ? 'Configured' : 'Missing URL'}</p>
+        <p>Key: {import.meta.env.VITE_SUPABASE_ANON_KEY ? 'Present' : 'Missing'}</p>
+        <p>Hash: {window.location.hash ? 'Present' : 'Empty'}</p>
       </div>
     </div>
   );
