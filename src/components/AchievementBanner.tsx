@@ -1,4 +1,4 @@
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Trophy, Flame, Target, Zap, Star, TrendingUp } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
@@ -142,7 +142,7 @@ export function AchievementBanner({ totalSongs }: AchievementBannerProps) {
               {Math.round((nextAchievement.progress / nextAchievement.target) * 100)}%
             </span>
           </div>
-          
+
           {/* Progress Bar */}
           <div className="w-full h-2 bg-gray-200 dark:bg-gray-800 rounded-full overflow-hidden">
             <motion.div

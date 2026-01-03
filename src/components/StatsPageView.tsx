@@ -6,9 +6,12 @@ interface StatsPageViewProps {
   onBack: () => void;
   theme: 'light' | 'dark';
   history?: any[];
+  userName: string;
+  songsThisWeek: number;
+  streak: number;
 }
 
-export function StatsPageView({ onBack, theme, history = [] }: StatsPageViewProps) {
+export function StatsPageView({ onBack, theme, history = [], userName, songsThisWeek, streak }: StatsPageViewProps) {
   return (
     <div className="min-h-screen bg-white dark:bg-black text-gray-900 dark:text-white noise-texture">
       {/* Header */}
@@ -29,8 +32,13 @@ export function StatsPageView({ onBack, theme, history = [] }: StatsPageViewProp
       </header>
 
       {/* Content - Use enhanced StatsView */}
-      <div className="pt-16">
-        <StatsView history={history} />
+      <div className="pt-24 container mx-auto px-4 md:px-6">
+        <StatsView
+          history={history}
+          userName={userName}
+          songsThisWeek={songsThisWeek}
+          streak={streak}
+        />
       </div>
     </div>
   );

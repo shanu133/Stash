@@ -32,7 +32,7 @@ app = FastAPI(title="Stash Engine API")
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Adjust this for production
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -49,8 +49,7 @@ def health_check():
 from shazamio import Shazam
 
 @app.post("/recognize")
-<<<<<<< HEAD
-def recognize_reel(request: ReelRequest):
+async def recognize_reel(request: ReelRequest):
     print(f"🚀 Processing URL: {request.url}")
     
     # --- STEP 1: METADATA CHECK (The Fast Path) ---
@@ -68,20 +67,15 @@ def recognize_reel(request: ReelRequest):
             # If metadata looks good (and isn't just "Original Audio"), verify and return
             if track and "Original Audio" not in track and artist:
                 print(f"✅ Metadata Match: {track} by {artist}")
-                spotify_result = search_spotify(track, artist)
+                spotify_result = search_spotify_strict(track, artist)
                 if spotify_result:
                     return spotify_result
     except Exception as e:
         print(f"⚠️ Metadata extraction skipped: {e}")
-=======
-async def recognize_reel(request: ReelRequest):
-    print(f"🚀 Processing: {request.url}")
->>>>>>> 36ab651fc45e4ea5236650b2c459320ba164a898
 
     # 1. DOWNLOAD AUDIO
     audio_filename = download_audio(request.url)
     if not audio_filename:
-<<<<<<< HEAD
         raise HTTPException(status_code=500, detail="Failed to download audio")
 
     try:
@@ -121,7 +115,7 @@ async def recognize_reel(request: ReelRequest):
         print(f"🤖 AI Found: {ai_data}")
         
         # Verify with Spotify
-        final_result = search_spotify(ai_data.get('track'), ai_data.get('artist'))
+        final_result = search_spotify_strict(ai_data.get('track'), ai_data.get('artist'))
         
         # Cleanup Gemini file
         try:
@@ -138,35 +132,6 @@ async def recognize_reel(request: ReelRequest):
             return final_result
         else:
             return {"success": False, "error": "Song found by AI but not in Spotify"}
-=======
-        raise HTTPException(status_code=500, detail="Audio download failed")
-
-    try:
-        # 2. ASK SHAZAM (Audio Fingerprinting)
-        print(f"🎵 Fingerprinting with Shazam: {audio_filename}")
-        shazam = Shazam()
-        
-        # Shazam requires ffmpeg or compatible file. Our download_audio handles this.
-        out = await shazam.recognize_song(audio_filename)
-        
-        # Cleanup audio immediately
-        if os.path.exists(audio_filename): os.remove(audio_filename)
-
-        # 3. PARSE SHAZAM RESULT
-        if not out.get('matches'):
-            print("❌ Shazam found no matches.")
-            return {"success": False, "error": "Shazam could not identify song"}
-
-        track_info = out['track']
-        shazam_title = track_info['title']
-        shazam_artist = track_info['subtitle']
-        
-        print(f"🎯 Shazam Match: {shazam_title} by {shazam_artist}")
-
-        # 4. VERIFY WITH SPOTIFY (Get Playable URI)
-        # We still search Spotify to get the URI for the frontend player/saving
-        return search_spotify_strict(shazam_title, shazam_artist)
->>>>>>> 36ab651fc45e4ea5236650b2c459320ba164a898
 
     except Exception as e:
         print(f"❌ Error: {e}")

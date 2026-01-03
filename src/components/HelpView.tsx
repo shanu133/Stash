@@ -3,7 +3,7 @@ import { ArrowLeft, Send, CheckCircle } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Textarea } from './ui/textarea';
-import { toast } from 'sonner@2.0.3';
+import { toast } from 'sonner';
 
 interface HelpViewProps {
   onBack: () => void;
@@ -22,37 +22,37 @@ export function HelpView({ onBack, theme }: HelpViewProps) {
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
-    
+
     if (!formData.name.trim()) {
       newErrors.name = 'Name is required';
     }
-    
+
     if (!formData.email.trim()) {
       newErrors.email = 'Email is required';
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       newErrors.email = 'Please enter a valid email';
     }
-    
+
     if (!formData.message.trim()) {
       newErrors.message = 'Message is required';
     } else if (formData.message.trim().length < 10) {
       newErrors.message = 'Message must be at least 10 characters';
     }
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       toast.error('Please fix the errors in the form');
       return;
     }
-    
+
     setIsSubmitting(true);
-    
+
     try {
       // Create mailto link with form data
       const subject = encodeURIComponent(`Stash Help & Feedback from ${formData.name}`);
@@ -60,14 +60,14 @@ export function HelpView({ onBack, theme }: HelpViewProps) {
         `Name: ${formData.name}\nEmail: ${formData.email}\n\nMessage:\n${formData.message}`
       );
       const mailtoLink = `mailto:worksahilsharma@gmail.com?subject=${subject}&body=${body}`;
-      
+
       // Open email client
       window.location.href = mailtoLink;
-      
+
       // Show success state
       setIsSubmitted(true);
       toast.success('Email client opened! Send the email to complete your message.');
-      
+
       // Reset form after delay
       setTimeout(() => {
         setFormData({ name: '', email: '', message: '' });
@@ -175,9 +175,8 @@ export function HelpView({ onBack, theme }: HelpViewProps) {
                     placeholder="Your name"
                     value={formData.name}
                     onChange={(e) => handleInputChange('name', e.target.value)}
-                    className={`glass-light border-gray-200 dark:border-white/20 ${
-                      errors.name ? 'border-red-500' : ''
-                    }`}
+                    className={`glass-light border-gray-200 dark:border-white/20 ${errors.name ? 'border-red-500' : ''
+                      }`}
                   />
                   {errors.name && (
                     <p className="mt-1 text-sm text-red-500">{errors.name}</p>
@@ -194,9 +193,8 @@ export function HelpView({ onBack, theme }: HelpViewProps) {
                     placeholder="your.email@example.com"
                     value={formData.email}
                     onChange={(e) => handleInputChange('email', e.target.value)}
-                    className={`glass-light border-gray-200 dark:border-white/20 ${
-                      errors.email ? 'border-red-500' : ''
-                    }`}
+                    className={`glass-light border-gray-200 dark:border-white/20 ${errors.email ? 'border-red-500' : ''
+                      }`}
                   />
                   {errors.email && (
                     <p className="mt-1 text-sm text-red-500">{errors.email}</p>
@@ -213,9 +211,8 @@ export function HelpView({ onBack, theme }: HelpViewProps) {
                     rows={6}
                     value={formData.message}
                     onChange={(e) => handleInputChange('message', e.target.value)}
-                    className={`glass-light border-gray-200 dark:border-white/20 resize-none ${
-                      errors.message ? 'border-red-500' : ''
-                    }`}
+                    className={`glass-light border-gray-200 dark:border-white/20 resize-none ${errors.message ? 'border-red-500' : ''
+                      }`}
                   />
                   {errors.message && (
                     <p className="mt-1 text-sm text-red-500">{errors.message}</p>

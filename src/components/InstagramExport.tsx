@@ -1,17 +1,16 @@
 import React, { useState, useRef } from 'react';
-import { motion } from 'motion/react';
-import { Instagram, Download, Share2, X } from 'lucide-react';
+import { Instagram, Download, Share2 } from 'lucide-react';
 import { Button } from './ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from './ui/dialog';
 import html2canvas from 'html2canvas';
 
+// Shared component for 1:1 fidelity between preview and export
 const InstagramStoryCard = React.forwardRef<HTMLDivElement, {
   totalSongs: number;
   genreData?: { name: string; value: number; color: string }[];
   streak?: number;
   style?: React.CSSProperties;
-  className?: string; // Allow passing Tailwind classes for the wrapper if needed
-  scale?: number; // Optional scale factor for text/elements if we want dynamic sizing, but standard CSS is better
+  className?: string;
 }>(({ totalSongs, genreData = [], streak = 0, style, className }, ref) => {
   return (
     <div
@@ -23,8 +22,8 @@ const InstagramStoryCard = React.forwardRef<HTMLDivElement, {
         color: '#ffffff',
         display: 'flex',
         flexDirection: 'column',
-        padding: '8% 8%', // Use percentage padding for scalability
-        ...style // Override dimensions/layout
+        padding: '8% 8%',
+        ...style
       }}
     >
       {/* Background Pattern */}
@@ -97,6 +96,8 @@ const InstagramStoryCard = React.forwardRef<HTMLDivElement, {
   );
 });
 
+InstagramStoryCard.displayName = 'InstagramStoryCard';
+
 interface InstagramExportProps {
   totalSongs: number;
   genreData?: { name: string; value: number; color: string }[];
@@ -121,10 +122,21 @@ export function InstagramExport({
       // Generate canvas from the HIDDEN high-res container
       const canvas = await html2canvas(exportRef.current, {
         backgroundColor: '#000000',
-        scale: 2, // 2x scale of 540x960 = 1080x1920 (HD Story size)
+        scale: 2,
         logging: false,
         useCORS: true,
         allowTaint: true,
+        onclone: (clonedDoc) => {
+          // Force all oklch colors to hex equivalents to prevent html2canvas crash
+          const elements = clonedDoc.getElementsByTagName('*');
+          for (let i = 0; i < elements.length; i++) {
+            const el = elements[i] as HTMLElement;
+            const style = window.getComputedStyle(el);
+            if (style.backgroundColor.includes('oklch')) el.style.backgroundColor = '#000000';
+            if (style.color.includes('oklch')) el.style.color = '#ffffff';
+            if (style.borderColor.includes('oklch')) el.style.borderColor = '#333333';
+          }
+        }
       });
 
       return new Promise((resolve) => {
@@ -144,7 +156,6 @@ export function InstagramExport({
       const blob = await generateImage();
       if (!blob) throw new Error('Failed to generate image');
 
-      // Create download link
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.download = `stash-stats-${Date.now()}.png`;
@@ -153,7 +164,6 @@ export function InstagramExport({
       link.click();
       document.body.removeChild(link);
 
-      // Clean up
       URL.revokeObjectURL(url);
       setIsOpen(false);
 
@@ -181,7 +191,6 @@ export function InstagramExport({
             text: `I've stashed ${totalSongs} songs! Check out my music discovery stats 🎵`,
           });
         } else {
-          // Fallback if file sharing not supported by the specific browser/OS combo
           await navigator.share({
             title: 'My Stash Stats',
             text: `I've stashed ${totalSongs} songs! Check out my music discovery stats 🎵`,
@@ -194,7 +203,6 @@ export function InstagramExport({
         setIsExporting(false);
       }
     } else {
-      // Fallback to export
       handleExport();
     }
   };
@@ -215,9 +223,12 @@ export function InstagramExport({
         <DialogContent className="bg-black border-white/10 w-fit max-w-[95vw] p-6">
           <DialogHeader>
             <DialogTitle className="text-white flex items-center gap-2">
-              <Instagram className="w-5 h-5 text-pink-500" />
+              <Instagram className="w-5 h-5 text-[#E1306C]" />
               Export Stats to Instagram
             </DialogTitle>
+            <DialogDescription className="text-zinc-500">
+              Share your music discovery stats on Instagram Stories.
+            </DialogDescription>
           </DialogHeader>
 
           {/* HIDDEN EXPORT CONTAINER (Source of Truth) */}
@@ -234,9 +245,8 @@ export function InstagramExport({
             />
           </div>
 
-          {/* VISIBLE PREVIEW (Scaled to fit screen, for user feedback only) */}
+          {/* VISIBLE PREVIEW */}
           <div className="flex flex-col items-center gap-6">
-            {/* Preview Container - Constrained by viewport height */}
             <div className="relative flex justify-center w-full">
               <InstagramStoryCard
                 totalSongs={totalSongs}
@@ -244,13 +254,12 @@ export function InstagramExport({
                 streak={streak}
                 className="rounded-2xl shadow-2xl"
                 style={{
-                  height: 'min(70vh, 600px)', // Cap height to fit screen
+                  height: 'min(70vh, 600px)',
                   width: 'auto',
                 }}
               />
             </div>
 
-            {/* Actions */}
             <div className="flex gap-3 w-full max-w-sm">
               <Button
                 onClick={handleExport}
@@ -261,7 +270,7 @@ export function InstagramExport({
                 {isExporting ? 'Exporting...' : 'Download Image'}
               </Button>
 
-              {navigator.share && (
+              {typeof navigator.share === 'function' && (
                 <Button
                   onClick={handleShare}
                   variant="outline"
@@ -278,7 +287,7 @@ export function InstagramExport({
             </p>
           </div>
         </DialogContent>
-      </Dialog >
+      </Dialog>
     </>
   );
 }

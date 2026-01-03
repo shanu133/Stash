@@ -1,247 +1,9 @@
-<<<<<<< HEAD
-import { useMemo } from 'react';
-import { motion } from 'motion/react';
-import { TrendingUp, Trophy, Music2, Sparkles } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { TrendingUp, Trophy, Music2, Sparkles, Music, Layers, Activity } from 'lucide-react';
 import { InstagramExport } from './InstagramExport';
-import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
-
-interface StatsViewProps {
-  history?: any[];
-}
-
-export function StatsView({ history = [] }: StatsViewProps) {
-
-  // -- CALCULATE REAL STATS --
-
-  const topArtists = useMemo(() => {
-    const artistCounts: Record<string, number> = {};
-    history.forEach(song => {
-      if (song.artist) {
-        artistCounts[song.artist] = (artistCounts[song.artist] || 0) + 1;
-      }
-    });
-
-    return Object.entries(artistCounts)
-      .sort(([, a], [, b]) => b - a)
-      .slice(0, 3)
-      .map(([name, count], index) => {
-        // Deterministic color/emoji based on name
-        const colors = [
-          'from-purple-500 to-pink-500',
-          'from-blue-500 to-cyan-500',
-          'from-pink-500 to-rose-500',
-          'from-orange-500 to-yellow-500'
-        ];
-        const emojis = ['🎤', '🦉', '✨', '🎸', '🎹', '🥁'];
-        const hash = name.length;
-
-        return {
-          name,
-          count,
-          image: emojis[hash % emojis.length],
-          color: colors[index % colors.length]
-        };
-      });
-  }, [history]);
-
-  const genreData = useMemo(() => {
-    // Since we don't have real genres yet, we'll "estimate" them based on source or artist/title hash
-    // In a real app, this would come from the API
-    const genres: Record<string, number> = { 'Pop': 0, 'Hip-Hop': 0, 'Electronic': 0, 'Rock': 0, 'R&B': 0 };
-
-    if (history.length === 0) return [{ name: 'N/A', value: 100, color: '#333' }];
-
-    history.forEach(song => {
-      // Mock logic: Deterministic assignment
-      const hash = (song.song?.length || 0) + (song.artist?.length || 0);
-      const keys = Object.keys(genres);
-      const genre = keys[hash % keys.length];
-      genres[genre]++;
-    });
-
-    return Object.entries(genres)
-      .filter(([, value]) => value > 0)
-      .map(([name, value], index) => {
-        const colors = ['#1DB954', '#9333EA', '#F59E0B', '#3B82F6', '#EC4899'];
-        return {
-          name,
-          value: Math.round((value / history.length) * 100),
-          color: colors[index % colors.length]
-        };
-      })
-      .sort((a, b) => b.value - a.value);
-  }, [history]);
-
-  const streak = useMemo(() => {
-    if (history.length === 0) return 0;
-
-    // Sort history by date descending
-    const sortedDetails = [...history].sort((a, b) =>
-      new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()
-    );
-
-    let currentStreak = 0;
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    // Check if we stashed something today
-    const lastStashDate = new Date(sortedDetails[0].created_at || Date.now());
-    lastStashDate.setHours(0, 0, 0, 0);
-
-    if (lastStashDate.getTime() === today.getTime()) {
-      currentStreak = 1;
-    }
-
-    // This is a simple approximation. For real streak we need to check distinct days.
-    // Let's just mock a "streak" based on activity count for now to keep it fun 
-    // if the dates aren't fully populated in the mock history
-    return Math.min(history.length, Math.floor(history.length / 2) + 1);
-  }, [history]);
-
-  const thisWeekCount = useMemo(() => {
-    const oneWeekAgo = new Date();
-    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-    return history.filter(h => new Date(h.created_at || Date.now()).getTime() > oneWeekAgo.getTime()).length;
-  }, [history]);
-
-  const achievements = [
-    { title: 'First Stash', progress: history.length > 0 ? 100 : 0, icon: Sparkles },
-    { title: '10 Songs Milestone', progress: Math.min(100, Math.round((history.length / 10) * 100)), icon: Music2 },
-    { title: 'Week Streak', progress: Math.min(100, Math.round((streak / 7) * 100)), icon: Trophy },
-  ];
-
-  return (
-    <div className="min-h-screen bg-white dark:bg-black text-gray-900 dark:text-white pb-safe noise-texture">
-      <div className="container mx-auto px-4 md:px-6 py-8 md:py-12 max-w-6xl">
-
-        {/* Vibe Header with Animated Orbs */}
-        <div className="relative mb-12 overflow-hidden rounded-3xl bg-gradient-to-br from-[#1DB954]/10 via-purple-500/10 to-blue-500/10 p-12 text-center border border-white/10">
-          {/* Floating Orbs */}
-          {[...Array(3)].map((_, i) => (
-            <motion.div
-              key={i}
-              className="absolute w-32 h-32 rounded-full blur-3xl opacity-30"
-              style={{
-                background: i === 0 ? '#1DB954' : i === 1 ? '#9333EA' : '#3B82F6',
-                left: `${20 + i * 30}%`,
-                top: `${10 + i * 20}%`,
-              }}
-              animate={{
-                y: [0, -20, 0],
-                x: [0, 10, 0],
-              }}
-              transition={{
-                duration: 3 + i,
-                repeat: Infinity,
-                ease: 'easeInOut',
-              }}
-            />
-          ))}
-
-          <div className="relative z-10">
-            <h1 className="text-4xl md:text-5xl mb-4 bg-gradient-to-r from-[#1DB954] via-purple-400 to-blue-400 bg-clip-text text-transparent" style={{ fontWeight: 700 }}>
-              {history.length > 0 ? "Euphoric & Melodic" : "Start Stashing"}
-            </h1>
-            <p className="text-gray-600 dark:text-gray-400 text-lg">
-              {history.length > 0 ? "Your music vibe this week" : "Your stats will appear here"}
-            </p>
-          </div>
-        </div>
-
-        {/* Main Grid */}
-        <div className="grid lg:grid-cols-3 gap-6 mb-8">
-
-          {/* Genre Architecture - Takes 2 columns */}
-          <div className="lg:col-span-2 glass-card rounded-2xl p-8 border border-white/5 backdrop-blur-sm">
-            <h2 className="text-xl font-semibold mb-6 flex items-center gap-2">
-              <Music2 className="w-5 h-5 text-[#1DB954]" />
-              Genre Distribution
-            </h2>
-
-            {history.length > 0 ? (
-              <div className="flex flex-col md:flex-row items-center justify-between gap-8">
-                {/* Pie Chart */}
-                <div className="w-full md:w-1/2">
-                  <ResponsiveContainer width="100%" height={250}>
-                    <PieChart>
-                      <Pie
-                        data={genreData}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={60}
-                        outerRadius={90}
-                        paddingAngle={5}
-                        dataKey="value"
-                      >
-                        {genreData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Pie>
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-
-                {/* Legend */}
-                <div className="w-full md:w-1/2 space-y-3">
-                  {genreData.map((genre) => (
-                    <div key={genre.name} className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div
-                          className="w-4 h-4 rounded-full"
-                          style={{ background: genre.color }}
-                        />
-                        <span className="text-sm font-medium">{genre.name}</span>
-                      </div>
-                      <span className="text-sm text-gray-500 dark:text-gray-400">
-                        {genre.value}%
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ) : (
-              <div className="flex items-center justify-center h-48 text-gray-500">
-                <p>Stash songs to see your genre breakdown</p>
-              </div>
-            )}
-          </div>
-
-          {/* Activity Board - Stacked */}
-          <div className="space-y-6">
-            {/* Songs This Week */}
-            <div className="glass-card rounded-2xl p-6 border border-white/5 backdrop-blur-sm">
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                  Songs This Week
-                </h3>
-                <TrendingUp className="w-4 h-4 text-emerald-500" />
-              </div>
-              <p className="text-4xl font-bold text-[#1DB954]">
-                {thisWeekCount}
-              </p>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                From your history
-              </p>
-            </div>
-
-            {/* Streak */}
-            <div className="glass-card rounded-2xl p-6 border border-white/5 backdrop-blur-sm">
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                  Current Streak
-                </h3>
-                <Trophy className="w-4 h-4 text-yellow-500" />
-              </div>
-              <p className="text-4xl font-bold text-yellow-500">{streak}</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                Total active days
-              </p>
-=======
-import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip, Legend } from 'recharts';
-import { Song } from './AppView';
-import { Sparkles, Zap, Trophy, Music, Calendar, Layers, Activity } from 'lucide-react';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { useEffect, useState } from 'react';
-import { api } from '../lib/api';
+import { Song, api } from '../lib/api';
 
 interface StatsViewProps {
   history: Song[];
@@ -263,54 +25,99 @@ export function StatsView({ history, userName, songsThisWeek, streak }: StatsVie
   });
 
   const genreData = Object.entries(genreCounts)
-    .map(([name, value]) => ({ name, value }))
-    .sort((a, b) => b.value - a.value)
-    .slice(0, 5); // Top 5
+    .map(([name, value], idx) => ({
+      name,
+      value: Math.round((value / history.length) * 100),
+      count: value,
+      color: COLORS[idx % COLORS.length]
+    }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 5);
+
+  // Generate Top Artists Data
+  const artistCounts: Record<string, { count: number, art: string }> = {};
+  history.forEach(song => {
+    if (!artistCounts[song.artist]) {
+      artistCounts[song.artist] = { count: 0, art: song.album_art_url };
+    }
+    artistCounts[song.artist].count += 1;
+  });
+
+  const topArtists = Object.entries(artistCounts)
+    .map(([name, data]) => ({
+      name,
+      count: data.count,
+      art: data.art,
+      image: data.art
+    }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 3);
+
+  // Achievements
+  const achievements = [
+    { title: 'First Stash', target: 1, current: history.length, icon: Sparkles },
+    { title: 'Collector', target: 10, current: history.length, icon: Music },
+    { title: 'Music Lover', target: 25, current: history.length, icon: Trophy },
+  ];
 
   useEffect(() => {
-    api.getVibeAnalysis(history).then(setVibe);
+    if (history.length > 0) {
+      api.getVibeAnalysis(history)
+        .then(setVibe)
+        .catch(() => setVibe("Eclectic & Curious"));
+    } else {
+      setVibe("No songs yet. Start stashing!");
+    }
   }, [history]);
 
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-20">
 
-      {/* High-Fidelity Mood Board Header */}
-      <div className="relative group overflow-hidden rounded-[3rem] border border-white/20 shadow-2xl bg-zinc-900/40 backdrop-blur-3xl p-10 md:p-16">
+      {/* Vibe Header with Animated Orbs (v1.4 Restoration) */}
+      <div className="relative overflow-hidden rounded-[2.5rem] border border-white/10 shadow-2xl bg-zinc-900/40 backdrop-blur-3xl p-10 md:p-16 text-center">
         {/* Animated Background Orbs */}
-        <div className="absolute top-0 right-0 w-64 h-64 bg-[#1DB954]/10 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/2 animate-pulse" />
-        <div className="absolute bottom-0 left-0 w-64 h-64 bg-purple-500/10 rounded-full blur-[100px] translate-y-1/2 -translate-x-1/2 animate-pulse delay-700" />
+        {[...Array(3)].map((_, i) => (
+          <motion.div
+            key={i}
+            className="absolute w-64 h-64 rounded-full blur-[100px] opacity-20 pointer-events-none"
+            style={{
+              background: i === 0 ? '#1DB954' : i === 1 ? '#9333EA' : '#3B82F6',
+              left: `${20 + i * 30}%`,
+              top: `${10 + i * 20}%`,
+            }}
+            animate={{
+              y: [0, -30, 0],
+              x: [0, 20, 0],
+              scale: [1, 1.2, 1],
+            }}
+            transition={{
+              duration: 5 + i * 2,
+              repeat: Infinity,
+              ease: 'easeInOut',
+            }}
+          />
+        ))}
 
-        <div className="relative z-10 flex flex-col md:flex-row items-center gap-10 md:gap-16">
-          <div className="flex-1 space-y-6 text-center md:text-left">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 backdrop-blur-md">
-              <Sparkles className="w-3.5 h-3.5 text-[#1DB954]" />
-              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[#1DB954]">Your Musical Identity</span>
-            </div>
-
-            <h2 className="text-5xl md:text-7xl font-black text-white leading-none tracking-tight">
-              {vibe}
-            </h2>
-
-            <p className="text-gray-400 text-lg md:text-xl font-medium max-w-xl leading-relaxed">
-              A sonic fingerprint of your latest discoveries. You're currently leaning into <span className="text-white">{genreData[0]?.name || 'new sounds'}</span>.
-            </p>
+        <div className="relative z-10 space-y-6">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 backdrop-blur-md">
+            <Sparkles className="w-3.5 h-3.5 text-[#1DB954]" />
+            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[#1DB954]">Your Musical Identity</span>
           </div>
 
-          {/* Quick Stat Blobs */}
-          <div className="flex gap-4 md:flex-col items-center">
-            <div className="w-24 h-24 md:w-32 md:h-32 rounded-full border border-white/10 bg-white/5 backdrop-blur-2xl flex flex-col items-center justify-center shadow-xl group-hover:scale-105 transition-transform duration-500">
-              <Music className="w-6 h-6 text-[#1DB954] mb-1" />
-              <span className="text-2xl font-black text-white leading-none">{history.length}</span>
-              <span className="text-[10px] font-bold text-gray-500 uppercase tracking-tighter">Total</span>
-            </div>
-          </div>
+          <h2 className="text-5xl md:text-7xl font-black text-white leading-tight tracking-tight bg-gradient-to-r from-white via-white to-white/60 bg-clip-text text-transparent">
+            {vibe}
+          </h2>
+
+          <p className="text-gray-400 text-lg md:text-xl font-medium max-w-2xl mx-auto leading-relaxed">
+            A sonic fingerprint of your latest discoveries. You're currently leaning into <span className="text-white">{genreData[0]?.name || 'new sounds'}</span>.
+          </p>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-        {/* Top Genres - Premium Card */}
-        <div className="md:col-span-2 glass-card rounded-[2.5rem] p-8 border-white/10 relative overflow-hidden">
+        {/* Genre Architecture - v1.4 Restoration */}
+        <div className="lg:col-span-2 glass-card rounded-[2rem] p-8 border-white/10 relative overflow-hidden bg-zinc-900/40 backdrop-blur-xl">
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center">
@@ -332,11 +139,11 @@ export function StatsView({ history, userName, songsThisWeek, streak }: StatsVie
                       innerRadius={70}
                       outerRadius={95}
                       paddingAngle={4}
-                      dataKey="value"
+                      dataKey="count"
                       stroke="none"
                     >
                       {genreData.map((_, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} className="focus:outline-none transition-all duration-300" />
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} className="focus:outline-none" />
                       ))}
                     </Pie>
                     <Tooltip
@@ -351,7 +158,7 @@ export function StatsView({ history, userName, songsThisWeek, streak }: StatsVie
                   </PieChart>
                 </ResponsiveContainer>
               ) : (
-                <div className="h-full flex items-center justify-center text-gray-500 text-sm">No data yet</div>
+                <div className="h-full flex items-center justify-center text-gray-500 text-sm font-medium">No data yet</div>
               )}
               {/* Center Label */}
               <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
@@ -364,168 +171,162 @@ export function StatsView({ history, userName, songsThisWeek, streak }: StatsVie
               {genreData.map((genre, idx) => (
                 <div key={genre.name} className="flex items-center justify-between group cursor-default">
                   <div className="flex items-center gap-3">
-                    <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: COLORS[idx % COLORS.length] }} />
+                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: COLORS[idx % COLORS.length] }} />
                     <span className="text-sm font-bold text-gray-400 group-hover:text-white transition-colors">{genre.name}</span>
                   </div>
-                  <span className="text-sm font-mono text-gray-500">{Math.round((genre.value / history.length) * 100)}%</span>
+                  <span className="text-sm font-mono text-gray-500">{genre.value}%</span>
                 </div>
               ))}
             </div>
           </div>
         </div>
 
-        {/* Dynamic Activity Board */}
+        {/* Activity Board - v1.4 Restoration */}
         <div className="space-y-6">
-          <div className="glass-card rounded-[2.5rem] p-8 border-white/5 relative bg-gradient-to-br from-[#1DB954]/10 to-transparent flex flex-col justify-between h-full">
-            <div className="space-y-6">
-              <div className="flex items-center justify-between">
-                <div className="w-12 h-12 rounded-2xl bg-[#1DB954]/20 flex items-center justify-center shadow-lg shadow-[#1DB954]/10">
-                  <Activity className="w-6 h-6 text-[#1DB954]" />
-                </div>
-                <div className="text-right">
-                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none">Activity</p>
-                  <p className="text-sm font-bold text-white">This Week</p>
-                </div>
+          <div className="glass-card rounded-[2rem] p-8 border-white/10 relative bg-zinc-900/40 backdrop-blur-xl border-l-4 border-l-[#1DB954]">
+            <div className="flex items-center justify-between mb-6">
+              <div className="w-12 h-12 rounded-2xl bg-[#1DB954]/20 flex items-center justify-center shadow-lg shadow-[#1DB954]/10">
+                <Activity className="w-6 h-6 text-[#1DB954]" />
               </div>
-
-              <div className="space-y-8">
-                <div className="flex items-baseline gap-2">
-                  <span className="text-6xl font-black text-white tracking-tighter">{songsThisWeek}</span>
-                  <span className="text-xl font-bold text-[#1DB954]">songs</span>
-                </div>
-
-                <div className="flex items-center gap-6">
-                  <div className="flex flex-col">
-                    <p className="text-gray-500 text-[10px] font-bold uppercase tracking-widest mb-1">Current Streak</p>
-                    <div className="flex items-center gap-2">
-                      <Trophy className="w-4 h-4 text-orange-400" />
-                      <span className="text-lg font-bold text-white">{streak} days</span>
-                    </div>
-                  </div>
-                  <div className="flex flex-col border-l border-white/10 pl-6">
-                    <p className="text-gray-500 text-[10px] font-bold uppercase tracking-widest mb-1">Consistency</p>
-                    <div className="flex items-center gap-2">
-                      <Calendar className="w-4 h-4 text-blue-400" />
-                      <span className="text-lg font-bold text-white">Top Tier</span>
-                    </div>
-                  </div>
-                </div>
+              <div className="text-right">
+                <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest leading-none mb-1">Activity</p>
+                <p className="text-sm font-bold text-white">This Week</p>
               </div>
->>>>>>> 36ab651fc45e4ea5236650b2c459320ba164a898
+            </div>
+
+            <div className="flex items-baseline gap-2 mb-4">
+              <span className="text-6xl font-black text-white tracking-tighter">{songsThisWeek}</span>
+              <span className="text-xl font-bold text-[#1DB954]">songs</span>
+            </div>
+
+            <div className="flex items-center gap-2 text-emerald-400 text-xs font-bold bg-emerald-400/10 w-fit px-3 py-1 rounded-full border border-emerald-400/20">
+              <TrendingUp className="w-3.5 h-3.5" />
+              <span className="uppercase tracking-wider">Trending Up</span>
+            </div>
+          </div>
+
+          <div className="glass-card rounded-[2rem] p-8 border-white/10 bg-zinc-900/40 backdrop-blur-xl border-l-4 border-l-orange-500">
+            <div className="flex items-center justify-between mb-6">
+              <div className="w-12 h-12 rounded-2xl bg-orange-500/20 flex items-center justify-center shadow-lg shadow-orange-500/10">
+                <Trophy className="w-6 h-6 text-orange-400" />
+              </div>
+              <div className="text-right">
+                <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest leading-none mb-1">Streak</p>
+                <p className="text-sm font-bold text-white">Keep going!</p>
+              </div>
+            </div>
+            <div className="flex items-baseline gap-2">
+              <p className="text-6xl font-black text-white tracking-tighter">{streak}</p>
+              <span className="text-xl font-bold text-orange-400 uppercase tracking-wider">Days</span>
             </div>
           </div>
         </div>
 
-<<<<<<< HEAD
-        {/* Top Artists */}
-        <div className="glass-card rounded-2xl p-8 border border-white/5 backdrop-blur-sm mb-8">
-          <h2 className="text-xl font-semibold mb-6">Top Artists</h2>
-          <div className="space-y-4">
-            {topArtists.map((artist, index) => (
-              <motion.div
-                key={artist.name}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: index * 0.1 }}
-                className="flex items-center gap-4 p-4 rounded-xl bg-white/5 hover:bg-white/10 transition-all"
-              >
-                <div className="flex items-center gap-4 flex-1">
-                  <span className="text-2xl font-bold text-gray-500 dark:text-gray-600 w-8">
-                    #{index + 1}
-                  </span>
-                  <div className={`w-12 h-12 rounded-full bg-gradient-to-br ${artist.color} flex items-center justify-center text-2xl shadow-lg`}>
-                    {artist.image}
-                  </div>
-                  <div>
-                    <p className="font-semibold">{artist.name}</p>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
-                      {artist.count} plays
-                    </p>
-                  </div>
-                </div>
-              </motion.div>
-            ))}
-            {topArtists.length === 0 && (
-              <p className="text-gray-500 text-center py-4">No top artists yet. Start listening!</p>
-            )}
-          </div>
-        </div>
-
-        {/* Recent Achievements */}
-        <div className="glass-card rounded-2xl p-8 border border-white/5 backdrop-blur-sm">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-semibold">Recent Achievements</h2>
-            <InstagramExport
-              totalSongs={history.length}
-              genreData={genreData}
-              topArtists={topArtists}
-              streak={streak}
-            />
-          </div>
-
-          <div className="space-y-4">
-            {achievements.map((achievement, index) => {
-              const Icon = achievement.icon;
-              return (
+        {/* Top Artists & Achievements Row */}
+        <div className="lg:col-span-3 grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Top Artists - v1.4 Restored Card */}
+          <div className="glass-card rounded-[2rem] p-8 border-white/10 bg-zinc-900/40 backdrop-blur-xl">
+            <h3 className="text-xl font-bold text-white mb-8 flex items-center gap-3">
+              <div className="w-8 h-8 rounded-xl bg-purple-500/20 flex items-center justify-center">
+                <Music2 className="w-4 h-4 text-purple-400" />
+              </div>
+              Top Artists
+            </h3>
+            <div className="space-y-4">
+              {topArtists.map((artist, i) => (
                 <motion.div
-                  key={achievement.title}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.1 }}
-                  className={`
-                    p-4 rounded-xl border transition-all
-                    ${achievement.progress === 100
-                      ? 'bg-[#1DB954]/10 border-[#1DB954]/30 shadow-lg shadow-[#1DB954]/20'
-                      : 'bg-white/5 border-white/10'
-                    }
-                  `}
+                  key={artist.name}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: i * 0.1 }}
+                  className="flex items-center justify-between p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-all group"
                 >
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-3">
-                      <div className={`
-                        w-10 h-10 rounded-lg flex items-center justify-center
-                        ${achievement.progress === 100
-                          ? 'bg-[#1DB954]/20'
-                          : 'bg-white/10'
-                        }
-                      `}>
-                        <Icon className={`
-                          w-5 h-5
-                          ${achievement.progress === 100
-                            ? 'text-[#1DB954]'
-                            : 'text-gray-400'
-                          }
-                        `} />
-                      </div>
-                      <div>
-                        <p className="font-semibold">{achievement.title}</p>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">
-                          {achievement.progress}% Complete
-                        </p>
-                      </div>
+                  <div className="flex items-center gap-5">
+                    <span className="text-lg font-black text-gray-700 group-hover:text-[#1DB954] w-6 transition-colors font-mono">#{i + 1}</span>
+                    <div className="relative">
+                      <img src={artist.art} alt={artist.name} className="w-14 h-14 rounded-2xl object-cover shadow-2xl group-hover:scale-105 transition-transform" />
+                      <div className="absolute inset-0 rounded-2xl ring-1 ring-inset ring-white/10" />
                     </div>
-                    {achievement.progress === 100 && (
-                      <span className="text-2xl">🎉</span>
-                    )}
+                    <div>
+                      <span className="font-bold text-white group-hover:text-[#1DB954] transition-colors">{artist.name}</span>
+                      <p className="text-xs text-gray-500 font-medium mt-0.5">{artist.count} stashes</p>
+                    </div>
                   </div>
-
-                  {/* Progress Bar */}
-                  <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
-                    <motion.div
-                      className="h-full bg-gradient-to-r from-[#1DB954] to-emerald-400"
-                      initial={{ width: 0 }}
-                      animate={{ width: `${achievement.progress}%` }}
-                      transition={{ duration: 1, delay: index * 0.2 }}
-                    />
+                  <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                    <TrendingUp className="w-3.5 h-3.5 text-[#1DB954]" />
                   </div>
                 </motion.div>
-              );
-            })}
+              ))}
+              {topArtists.length === 0 && (
+                <div className="py-12 text-center space-y-3">
+                  <div className="w-12 h-12 rounded-full bg-white/5 mx-auto flex items-center justify-center">
+                    <Music className="w-6 h-6 text-gray-600" />
+                  </div>
+                  <p className="text-gray-500 text-sm font-medium">No stashes found yet.</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Achievements - v1.4 Restored Card with Export */}
+          <div className="glass-card rounded-[2rem] p-8 border-white/10 bg-zinc-900/40 backdrop-blur-xl">
+            <div className="flex items-center justify-between mb-8">
+              <h3 className="text-xl font-bold text-white flex items-center gap-3">
+                <div className="w-8 h-8 rounded-xl bg-orange-500/20 flex items-center justify-center">
+                  <Sparkles className="w-4 h-4 text-orange-400" />
+                </div>
+                Achievements
+              </h3>
+              <InstagramExport
+                totalSongs={history.length}
+                genreData={genreData}
+                topArtists={topArtists}
+                streak={streak}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              {achievements.map((ach, i) => {
+                const isComplete = ach.current >= ach.target;
+                const progress = Math.min((ach.current / ach.target) * 100, 100);
+                const Icon = ach.icon;
+                return (
+                  <motion.div
+                    key={ach.title}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.1 + 0.3 }}
+                    className={`p-6 rounded-3xl border ${isComplete ? 'bg-[#1DB954]/10 border-[#1DB954]/30 shadow-lg shadow-[#1DB954]/10' : 'bg-white/5 border-white/5'} transition-all group overflow-hidden relative`}
+                  >
+                    {isComplete && (
+                      <div className="absolute top-0 right-0 p-3">
+                        <div className="bg-[#1DB954] rounded-full p-1">
+                          <Sparkles className="w-3 h-3 text-black" />
+                        </div>
+                      </div>
+                    )}
+                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-4 ${isComplete ? 'bg-[#1DB954]/20' : 'bg-white/5'}`}>
+                      <Icon className={`w-6 h-6 ${isComplete ? 'text-[#1DB954]' : 'text-gray-600'}`} />
+                    </div>
+                    <h4 className="font-bold text-white text-sm mb-1">{ach.title}</h4>
+                    <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-4">
+                      {isComplete ? 'Complete ✅' : `${ach.current}/${ach.target} Songs`}
+                    </p>
+
+                    <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
+                      <motion.div
+                        initial={{ width: 0 }}
+                        animate={{ width: `${progress}%` }}
+                        transition={{ duration: 1, delay: i * 0.2 + 0.5 }}
+                        className={`h-full rounded-full ${isComplete ? 'bg-[#1DB954]' : 'bg-gray-700'}`}
+                      />
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </div>
           </div>
         </div>
-
-=======
->>>>>>> 36ab651fc45e4ea5236650b2c459320ba164a898
       </div>
     </div>
   );

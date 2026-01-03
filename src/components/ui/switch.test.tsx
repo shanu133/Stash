@@ -33,3 +33,4 @@ describe('Switch Component', () => {
         expect(switchElement).toHaveClass('data-[state=unchecked]:bg-[#525252]');
     });
 });
+
