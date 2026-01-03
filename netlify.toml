@@ -1,0 +1,5 @@
+[build]
+  command = "./netlify_build.sh"
+
+[build.environment]
+  PYTHON_VERSION = "3.11"
