@@ -350,18 +350,6 @@ export default function App() {
   };
 
   const renderView = () => {
-    // Calculate derived stats for views that need it
-    const now = new Date();
-    const startOfWeek = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay());
-    const songsThisWeek = state.history.filter(s => {
-      const date = s.created_at ? new Date(s.created_at) : new Date();
-      return date >= startOfWeek;
-    }).length;
-
-    // Calculate streak
-    const dates = [...new Set(state.history.map(s => (s.created_at || '').split('T')[0]))].sort().reverse();
-    let currentStreak = dates.length > 0 ? 1 : 0;
-
     switch (state.currentView) {
       case 'privacy':
         return <PrivacyView onBack={handleBack} theme={state.theme} />;
@@ -370,16 +358,7 @@ export default function App() {
       case 'help':
         return <HelpView onBack={handleBack} theme={state.theme} />;
       case 'stats':
-        return (
-          <StatsPageView
-            onBack={handleBack}
-            theme={state.theme}
-            history={state.history}
-            userName={state.userName}
-            songsThisWeek={songsThisWeek}
-            streak={currentStreak}
-          />
-        );
+        return <StatsPageView onBack={handleBack} theme={state.theme} history={state.history} />;
       case 'settings':
         return (
           <SettingsView
@@ -394,7 +373,6 @@ export default function App() {
             onToggleAutoAdd={handleToggleAutoAdd}
             onPlaylistChange={handlePlaylistChange}
             onToggleTheme={handleToggleTheme}
-            onOpenStats={() => handleNavigate('stats')}
           />
         );
       case 'app':
@@ -402,8 +380,6 @@ export default function App() {
           <AppView
             userName={state.userName}
             history={state.history}
-            songsThisWeek={songsThisWeek}
-            streak={currentStreak}
             autoAddTopMatch={state.autoAddTopMatch}
             theme={state.theme}
             onLogout={handleLogout}
@@ -427,7 +403,6 @@ export default function App() {
         );
     }
   };
-
 
   return (
     <div className="size-full">
