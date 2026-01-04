@@ -1,12 +1,9 @@
 fastapi
 uvicorn
-python-dotenv
 yt-dlp
 spotipy
-google-generativeai
 requests
 pydantic
-ffmpeg-python
 python-multipart
 shazamio
 audioop-lts; python_version >= "3.13"

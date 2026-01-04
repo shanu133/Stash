@@ -7,7 +7,8 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from dotenv import load_dotenv
-import google.generativeai as genai
+import requests
+# removed google-generativeai
 import spotipy
 from spotipy.oauth2 import SpotifyClientCredentials
 import yt_dlp
@@ -18,8 +19,8 @@ add_paths()
 # 1. Load Keys
 load_dotenv()
 
-# 2. Configure AI
-genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+# 2. Configure AI (Using REST API instead of heavy SDK to save space)
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
 # 3. Configure Spotify
 sp = spotipy.Spotify(auth_manager=SpotifyClientCredentials(
@@ -155,10 +156,21 @@ class SaveWebTrackRequest(BaseModel):
 # Helper: AI Genre Detection
 def detect_genre_with_gemini(track_name, artist_name):
     try:
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
         prompt = f"What is the primary music genre of the song '{track_name}' by '{artist_name}'? Return only ONE word (e.g., Techno, House, Pop, Rock, Ambient). Do not write sentences."
-        model = genai.GenerativeModel('gemini-pro')
-        response = model.generate_content(prompt)
-        return response.text.strip().replace(".", "")
+        
+        payload = {
+            "contents": [{
+                "parts": [{"text": prompt}]
+            }]
+        }
+        
+        response = requests.post(url, json=payload)
+        response.raise_for_status()
+        data = response.json()
+        
+        vibe = data['candidates'][0]['content']['parts'][0]['text'].strip().replace(".", "")
+        return vibe
     except Exception as e:
         print(f"⚠️ Gemini Genre Error: {e}")
         return "Unknown"
@@ -173,11 +185,21 @@ def analyze_vibe_summary(request: AnalyzeVibeRequest):
         return {"vibe": "No music yet! Start stashing to find your vibe."}
     
     try:
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
         song_list = ", ".join(request.songs[:20]) # Limit to last 20 to save tokens
         prompt = f"Here is a user's recently liked music: {song_list}. In one short, fun sentence (max 10 words), describe their current 'music vibe' or mood. Be creative like Spotify Wrapped. Example: 'Melancholic late-night techno drive by yourself.'"
-        model = genai.GenerativeModel('gemini-pro')
-        response = model.generate_content(prompt)
-        vibe = response.text.strip()
+        
+        payload = {
+            "contents": [{
+                "parts": [{"text": prompt}]
+            }]
+        }
+        
+        res = requests.post(url, json=payload)
+        res.raise_for_status()
+        data = res.json()
+        
+        vibe = data['candidates'][0]['content']['parts'][0]['text'].strip()
         print(f"✨ Vibe Result: {vibe}")
         return {"vibe": vibe}
     except Exception as e:

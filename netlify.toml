@@ -1,5 +1,8 @@
 [build]
-  command = "./netlify_build.sh"
+  command = "npm install && npm run build"
+  publish = "dist"
 
-[build.environment]
-  PYTHON_VERSION = "3.11"
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
