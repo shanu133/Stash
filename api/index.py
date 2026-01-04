@@ -57,7 +57,8 @@ async def recognize_reel(request: ReelRequest):
     # 1. DOWNLOAD AUDIO
     audio_filename = download_audio(request.url)
     if not audio_filename:
-        raise HTTPException(status_code=500, detail="Audio download failed")
+        # Return 422 (Unprocessable Entity) instead of 500 so frontend handles it gracefully
+        raise HTTPException(status_code=422, detail="Could not download audio. Instagram/TikTok might be blocking the request. Try a different link.")
 
     try:
         # 2. ASK SHAZAM (Audio Fingerprinting)
@@ -101,7 +102,12 @@ def download_audio(url):
             'quiet': False, 
             'no_warnings': False,
             'nocheckcertificate': True,
-            'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+            'http_headers': {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
+                'Accept-Language': 'en-US,en;q=0.9',
+                'Sec-Fetch-Mode': 'navigate',
+            }
         }
 
         if has_ffmpeg:
