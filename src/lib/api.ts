@@ -28,6 +28,11 @@ export interface Playlist {
 }
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://localhost:8000" : window.location.origin);
+console.log('🔗 API Config:', {
+  VITE_API_URL: import.meta.env.VITE_API_URL,
+  MODE: import.meta.env.MODE,
+  BASE_URL: API_BASE_URL
+});
 
 export const api = {
   async connectSpotify(): Promise<void> {
@@ -78,6 +83,7 @@ export const api = {
     }
 
     try {
+      console.log(`🌐 Fetching: ${API_BASE_URL}/recognize`);
       const response = await fetch(`${API_BASE_URL}/recognize`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

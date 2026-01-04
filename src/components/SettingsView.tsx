@@ -35,7 +35,7 @@ export function SettingsView({
     onOpenStats,
 }: SettingsViewProps) {
     return (
-        <div className="min-h-screen bg-white dark:bg-black text-gray-900 dark:text-white noise-texture">
+        <div className="min-h-screen bg-white dark:bg-black text-gray-900 dark:text-white">
             {/* Header */}
             <header className="sticky top-0 z-40 backdrop-blur-xl bg-white/80 dark:bg-black/80 border-b border-gray-200 dark:border-white/10">
                 <div className="container mx-auto px-4 md:px-6 py-4">
