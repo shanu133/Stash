@@ -13,11 +13,12 @@ import spotipy
 from spotipy.oauth2 import SpotifyClientCredentials
 import yt_dlp
 import shutil
-from static_ffmpeg import add_paths
-add_paths()
+# from static_ffmpeg import add_paths
+# add_paths()
 
 # 1. Load Keys
 load_dotenv()
+
 
 # 2. Configure AI (Using REST API instead of heavy SDK to save space)
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
@@ -97,7 +98,10 @@ def download_audio(url):
         has_ffmpeg = shutil.which("ffmpeg") is not None
         
         ydl_opts = {
-            'quiet': True, 'no_warnings': True,
+            'quiet': False, 
+            'no_warnings': False,
+            'nocheckcertificate': True,
+            'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
         }
 
         if has_ffmpeg:
