@@ -148,14 +148,31 @@ def download_audio(url):
 def search_spotify_strict(track, artist):
     # Search with keywords (broader than strict field match, but sorted by popularity)
     query = f"{track} {artist}" 
-    results = sp.search(q=query, type='track', limit=5)
+    results = sp.search(q=query, type='track', limit=10)  # Get more results to filter
     items = results['tracks']['items']
     
     if not items: return {"success": False, "error": "Not found on Spotify"}
 
+    # IMPROVED MATCHING: Prioritize exact artist matches
+    exact_matches = []
+    partial_matches = []
+    
+    for item in items:
+        item_artist = item['artists'][0]['name'].lower()
+        search_artist = artist.lower()
+        
+        # Check if artist name matches (exact or contains)
+        if item_artist == search_artist:
+            exact_matches.append(item)
+        elif search_artist in item_artist or item_artist in search_artist:
+            partial_matches.append(item)
+    
+    # Prefer exact matches, fall back to partial, then all results
+    candidates = exact_matches or partial_matches or items
+    
     # SORT BY POPULARITY (Fixes the "Cover Song" issue)
-    items.sort(key=lambda x: x['popularity'], reverse=True)
-    best = items[0]
+    candidates.sort(key=lambda x: x['popularity'], reverse=True)
+    best = candidates[0]
     
     print(f"🎯 Spotify Match (Popularity {best['popularity']}): {best['name']} by {best['artists'][0]['name']}")
 
