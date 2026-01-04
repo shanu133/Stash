@@ -91,7 +91,10 @@ export const api = {
       });
 
       if (!response.ok) {
-        throw new Error(`Backend Error: ${response.status} ${response.statusText} from ${API_BASE_URL}/recognize`);
+        if (response.status === 422) {
+          throw new Error("Instagram blocked the download. Try a YouTube link or a different post.");
+        }
+        throw new Error(`Backend Error: ${response.status} ${response.statusText}`);
       }
 
       const data = await response.json();
