@@ -5,7 +5,6 @@ dist
 .git
 *.m4a
 *.mp3
-*.txt
 *.log
 src_backup_v1.3
 playwright-report
@@ -16,3 +15,5 @@ original_app.tsx
 ffcache*
 repro_*
 temp_*
+# Allow requirements.backend.txt but ignore other txt files
+requirements.txt
