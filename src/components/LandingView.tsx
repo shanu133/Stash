@@ -14,7 +14,7 @@ interface LandingViewProps {
 
 export function LandingView({ onConnect, theme, onToggleTheme, onNavigate }: LandingViewProps) {
   return (
-    <div className="min-h-screen bg-white dark:bg-black text-gray-900 dark:text-white overflow-hidden noise-texture">
+    <div className="min-h-screen bg-white dark:bg-black text-gray-900 dark:text-white overflow-hidden">
       {/* Header with Logo Placeholder */}
       <header className="fixed top-0 left-0 right-0 z-50 backdrop-blur-xl bg-white/80 dark:bg-black/80 border-b border-gray-200 dark:border-white/10">
         <div className="container mx-auto px-4 md:px-6 py-4">
@@ -272,15 +272,6 @@ export function LandingView({ onConnect, theme, onToggleTheme, onNavigate }: Lan
             <Moon className="w-5 h-5 text-purple-600" />
           )}
         </Button>
-      </div>
-
-      {/* Debug Overlay */}
-      <div className="fixed bottom-4 right-4 z-[100] bg-black/80 text-white p-4 rounded-lg text-xs font-mono max-w-sm pointer-events-none">
-        <p className="font-bold text-[#1DB954]">Debug Status:</p>
-        <p>Theme: {theme}</p>
-        <p>Supabase: {import.meta.env.VITE_SUPABASE_URL ? 'Configured' : 'Missing URL'}</p>
-        <p>Key: {import.meta.env.VITE_SUPABASE_ANON_KEY ? 'Present' : 'Missing'}</p>
-        <p>Hash: {window.location.hash ? 'Present' : 'Empty'}</p>
       </div>
     </div>
   );
