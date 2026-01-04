@@ -1,5 +1,8 @@
 [phases.setup]
 nixPkgs = ["python3", "ffmpeg"]
 
+[phases.install]
+cmds = ["pip install -r requirements.backend.txt"]
+
 [start]
 cmd = "python main.py"
