@@ -117,9 +117,21 @@ async def recognize_reel(req: ReelRequest, request: Request):
         raise HTTPException(status_code=500, detail=str(e))
 
 def download_audio(url):
-    """Downloads Instagram audio to /tmp. Falls back to direct format if FFmpeg is missing."""
+    """Downloads Instagram audio to /tmp. Tries without cookies first (public posts), then with cookies."""
+    
+    # Try WITHOUT cookies first (works for public posts)
+    result = _download_with_options(url, use_cookies=False)
+    
+    # If failed, retry WITH cookies (for private/restricted posts)
+    if not result:
+        print("⚠️ Cookieless download failed. Retrying with authentication...")
+        result = _download_with_options(url, use_cookies=True)
+    
+    return result
+
+def _download_with_options(url, use_cookies=False):
+    """Internal function to download with or without cookies."""
     try:
-        # Vercel: only /tmp is writable
         filename = f"/tmp/temp_{int(time.time())}"
         has_ffmpeg = shutil.which("ffmpeg") is not None
         
@@ -135,38 +147,38 @@ def download_audio(url):
             }
         }
 
-        # Add cookie support for Instagram authentication with rotation
-        cookie_pool = [
-            os.getenv('YTDLP_COOKIES'),
-            os.getenv('YTDLP_COOKIES_1'),
-            os.getenv('YTDLP_COOKIES_2'),
-            os.getenv('YTDLP_COOKIES_3'),
-        ]
-        
-        # Filter out None values and pick a random cookie
-        available_cookies = [c for c in cookie_pool if c]
-        
-        if available_cookies:
-            import random
-            cookies_content = random.choice(available_cookies)
-            cookie_file = '/tmp/cookies.txt'
-            try:
-                with open(cookie_file, 'w') as f:
-                    f.write(cookies_content)
-                ydl_opts['cookiefile'] = cookie_file
-                print(f"🍪 Using cookies for authentication (Pool: {len(available_cookies)} accounts)")
-            except Exception as e:
-                print(f"⚠️ Cookie file creation failed: {e}")
+        # Add cookies only if requested
+        if use_cookies:
+            cookie_pool = [
+                os.getenv('YTDLP_COOKIES'),
+                os.getenv('YTDLP_COOKIES_1'),
+                os.getenv('YTDLP_COOKIES_2'),
+                os.getenv('YTDLP_COOKIES_3'),
+            ]
+            
+            available_cookies = [c for c in cookie_pool if c]
+            
+            if available_cookies:
+                import random
+                cookies_content = random.choice(available_cookies)
+                cookie_file = '/tmp/cookies.txt'
+                try:
+                    with open(cookie_file, 'w') as f:
+                        f.write(cookies_content)
+                    ydl_opts['cookiefile'] = cookie_file
+                    print(f"🍪 Using cookies for authentication (Pool: {len(available_cookies)} accounts)")
+                except Exception as e:
+                    print(f"⚠️ Cookie file creation failed: {e}")
+        else:
+            print("🌐 Trying cookieless download (public post)...")
 
         if has_ffmpeg:
-            print("🎞️ FFmpeg detected. Downloading mp3...")
             ydl_opts.update({
                 'format': 'bestaudio/best',
                 'outtmpl': filename,
                 'postprocessors': [{'key': 'FFmpegExtractAudio','preferredcodec': 'mp3'}],
             })
         else:
-            print("⚠️ FFmpeg NOT detected. Downloading direct audio...")
             ydl_opts.update({
                 'format': 'bestaudio',
                 'outtmpl': f"{filename}.%(ext)s",
