@@ -3,7 +3,7 @@ import time
 # Trigger reload
 import json
 import glob
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from dotenv import load_dotenv
@@ -49,13 +49,38 @@ def health_check():
 
 
 from shazamio import Shazam
+from collections import defaultdict
+import time
+
+# Rate limiting storage (in-memory for now)
+request_log = defaultdict(list)
 
 @app.post("/recognize")
-async def recognize_reel(request: ReelRequest):
-    print(f"🚀 Processing: {request.url}")
+async def recognize_reel(req: ReelRequest, request: Request):
+    # Get client IP for rate limiting
+    client_ip = "unknown"
+    try:
+        # Try to get real IP from headers (for proxies/load balancers)
+        client_ip = request.headers.get("x-forwarded-for", "unknown").split(",")[0]
+    except:
+        pass
+    
+    # Rate limiting: 10 reels per IP per day
+    now = time.time()
+    request_log[client_ip] = [t for t in request_log[client_ip] if now - t < 86400]  # Keep last 24h
+    
+    if len(request_log[client_ip]) >= 10:
+        raise HTTPException(
+            status_code=429, 
+            detail="Daily limit reached (10 reels/day). Upgrade to Pro for unlimited access!"
+        )
+    
+    request_log[client_ip].append(now)
+    
+    print(f"🚀 Processing: {req.url} (IP: {client_ip}, Count: {len(request_log[client_ip])})")
 
     # 1. DOWNLOAD AUDIO
-    audio_filename = download_audio(request.url)
+    audio_filename = download_audio(req.url)
     if not audio_filename:
         # Return 422 (Unprocessable Entity) instead of 500 so frontend handles it gracefully
         raise HTTPException(status_code=422, detail="Could not download audio. Instagram/TikTok might be blocking the request. Try a different link.")
@@ -110,15 +135,26 @@ def download_audio(url):
             }
         }
 
-        # Add cookie support for Instagram authentication
-        cookies_content = os.getenv('YTDLP_COOKIES')
-        if cookies_content:
+        # Add cookie support for Instagram authentication with rotation
+        cookie_pool = [
+            os.getenv('YTDLP_COOKIES'),
+            os.getenv('YTDLP_COOKIES_1'),
+            os.getenv('YTDLP_COOKIES_2'),
+            os.getenv('YTDLP_COOKIES_3'),
+        ]
+        
+        # Filter out None values and pick a random cookie
+        available_cookies = [c for c in cookie_pool if c]
+        
+        if available_cookies:
+            import random
+            cookies_content = random.choice(available_cookies)
             cookie_file = '/tmp/cookies.txt'
             try:
                 with open(cookie_file, 'w') as f:
                     f.write(cookies_content)
                 ydl_opts['cookiefile'] = cookie_file
-                print(f"🍪 Using cookies for authentication")
+                print(f"🍪 Using cookies for authentication (Pool: {len(available_cookies)} accounts)")
             except Exception as e:
                 print(f"⚠️ Cookie file creation failed: {e}")
 
