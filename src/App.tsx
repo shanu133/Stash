@@ -97,7 +97,9 @@ export default function App() {
   // Handle Auth Session
   useEffect(() => {
     const checkSession = async () => {
+      console.log('🔐 Checking auth session...');
       const { data: { session } } = await supabase.auth.getSession();
+      console.log('🔐 Session:', session ? 'Found' : 'Not found');
       if (session) {
         handleAuthSuccess(session.user);
       }
@@ -105,7 +107,8 @@ export default function App() {
     checkSession();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
+      (event, session) => {
+        console.log('🔐 Auth state changed:', event, session ? 'Session present' : 'No session');
         if (session) {
           handleAuthSuccess(session.user);
         }
@@ -116,6 +119,7 @@ export default function App() {
   }, []);
 
   const handleAuthSuccess = async (user: any) => {
+    console.log('✅ Auth success! User:', user.email);
     setState((prev) => ({
       ...prev,
       isLoggedIn: true,
@@ -123,6 +127,7 @@ export default function App() {
       userName: user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
       currentView: 'app',
     }));
+    console.log('✅ Redirecting to dashboard...');
 
     try {
       const playlists = await api.getUserPlaylists();
