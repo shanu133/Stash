@@ -34,6 +34,7 @@ interface AppState {
   isProcessing: boolean;
   processingStage: 1 | 2 | 3 | 'success' | 'error';
   processingError?: string;
+  hasSpotifyToken: boolean;
 }
 
 export default function App() {
@@ -50,6 +51,7 @@ export default function App() {
       showModal: false,
       currentView: 'landing',
       isLoadingHistory: false,
+      hasSpotifyToken: false,
       autoAddTopMatch: true, // Default to true as requested
       defaultPlaylistId: '1',
       playlists: [],
@@ -120,9 +122,12 @@ export default function App() {
 
   const handleAuthSuccess = async (user: any) => {
     console.log('✅ Auth success! User:', user.email);
+    const token = await api.getSpotifyToken();
+
     setState((prev) => ({
       ...prev,
       isLoggedIn: true,
+      hasSpotifyToken: !!token,
       userEmail: user.email || '',
       userName: user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
       currentView: 'app',
@@ -130,11 +135,21 @@ export default function App() {
     console.log('✅ Redirecting to dashboard...');
 
     try {
-      const playlists = await api.getUserPlaylists();
-      setState((prev) => ({ ...prev, playlists }));
-      await loadHistory();
+      // Parallelize for speed and decoupling
+      console.log('🔄 Fetching user data ecosystem...');
+      const results = await Promise.allSettled([
+        api.getUserPlaylists(),
+        loadHistory()
+      ]);
+
+      const [playlistsRes] = results;
+      if (playlistsRes.status === 'fulfilled') {
+        setState((prev) => ({ ...prev, playlists: playlistsRes.value }));
+      } else {
+        console.warn("Auth: Playlists failed to load (Token might be expired):", playlistsRes.reason);
+      }
     } catch (err) {
-      console.warn("Auth: Failed to fetch enriched user data:", err);
+      console.error("Auth: Critical Failure in data ecosystem:", err);
     }
   };
 
@@ -192,6 +207,7 @@ export default function App() {
         showModal: false,
         currentView: 'landing',
         isLoadingHistory: false,
+        hasSpotifyToken: false,
         autoAddTopMatch: true,
         defaultPlaylistId: '1',
         playlists: [],
@@ -393,6 +409,8 @@ export default function App() {
             defaultPlaylistId={state.defaultPlaylistId}
             playlists={state.playlists}
             theme={state.theme}
+            hasSpotifyToken={state.hasSpotifyToken}
+            onReconnectSpotify={handleConnectSpotify}
             onBack={handleBack}
             onLogout={handleLogout}
             onToggleAutoAdd={handleToggleAutoAdd}

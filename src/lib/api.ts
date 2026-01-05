@@ -119,8 +119,16 @@ export const api = {
   },
 
   async getSpotifyToken(): Promise<string | null> {
-    const { data: { session } } = await supabase.auth.getSession();
-    return session?.provider_token || null;
+    const { data: { session }, error } = await supabase.auth.getSession();
+    if (error) {
+      console.error('❌ Supabase: Session fetch error:', error);
+      return null;
+    }
+    const token = session?.provider_token || null;
+    if (!token && session) {
+      console.warn('⚠️ Supabase: Session exists but provider_token is MISSING (expired or refresh failed)');
+    }
+    return token;
   },
 
   async saveToSpotifyLibrary(trackId: string): Promise<boolean> {
@@ -242,28 +250,32 @@ export const api = {
       console.warn("⚠️ Supabase Insert Failed (Ignored):", dbError);
     }
 
-    // Construct a temporary song object if DB failed, so the UI can still show success
-    const fallbackSong: Song = {
-      id: song.id,
-      song: song.song,
-      artist: song.artist,
-      source: source || 'Web',
-      album_art_url: song.album_art_url,
-      spotify_url: song.spotify_url || '',
-      genre: savedSong?.genre || 'Unknown',
-      created_at: new Date().toISOString()
-    };
+    // Construct a temporary song object only if DB succeeded
+    if (!savedSong) {
+      console.error("❌ Stash Failure: Song could not be saved to database.");
+      throw new Error("Failed to save song to database. Your history might be out of sync.");
+    }
 
-    return { song: savedSong || fallbackSong, playlistName: savedPlaylistName };
+    return { song: savedSong, playlistName: savedPlaylistName };
   },
 
   async getUserHistory(): Promise<Song[]> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      console.warn("⚠️ History: No authenticated user found, returning empty history.");
+      return [];
+    }
+
     const { data, error } = await supabase
       .from('history')
       .select('*')
+      .eq('user_id', user.id)
       .order('created_at', { ascending: false });
 
-    if (error) throw error;
+    if (error) {
+      console.error("❌ History: Supabase fetch error:", error);
+      throw error;
+    }
     return data || [];
   },
 

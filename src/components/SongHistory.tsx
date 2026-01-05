@@ -2,6 +2,7 @@ import { Song } from '../types';
 import { Trash2, Share2, Search, Calendar } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import LoadingSkeleton from './LoadingSkeleton';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface SongHistoryProps {
     history: Song[];
@@ -48,32 +49,48 @@ export default function SongHistory({ history, onDelete }: SongHistoryProps) {
 
     if (history.length === 0) {
         return (
-            <div className="space-y-4">
-                <h2 className="text-xl font-semibold">Recently Stashed</h2>
-                <div className="text-center py-16 space-y-6">
-                    {/* Empty State Illustration */}
-                    <div className="relative w-32 h-32 mx-auto">
-                        <div className="absolute inset-0 rounded-full bg-gradient-to-br from-[#1DB954]/20 to-purple-500/20 blur-xl"></div>
-                        <div className="relative w-32 h-32 rounded-full bg-gradient-to-br from-[#1DB954]/10 to-purple-500/10 border border-gray-700 flex items-center justify-center">
-                            <Search className="w-16 h-16 text-gray-600" />
+            <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="space-y-4"
+            >
+                <h2 className="text-xl font-bold tracking-tight">Recently Stashed</h2>
+                <div className="glass-card rounded-[2.5rem] p-10 md:p-16 text-center border-2 border-dashed border-gray-200 dark:border-white/5 bg-gray-50/50 dark:bg-white/[0.02] backdrop-blur-3xl overflow-hidden relative">
+                    {/* Background Glow */}
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-[#1DB954]/10 rounded-full blur-[80px] pointer-events-none" />
+
+                    <div className="relative z-10 space-y-8 max-w-lg mx-auto">
+                        <div className="w-24 h-24 mx-auto rounded-3xl bg-gradient-to-br from-[#1DB954]/20 to-purple-500/20 flex items-center justify-center shadow-2xl">
+                            <Music className="w-12 h-12 text-[#1DB954]" />
+                        </div>
+
+                        <div className="space-y-3">
+                            <h3 className="text-3xl font-black text-gray-900 dark:text-white tracking-tight">Your library is waiting.</h3>
+                            <p className="text-gray-600 dark:text-gray-400 text-lg font-medium leading-relaxed">
+                                Start capturing the soundtrack of your internet life.
+                            </p>
+                        </div>
+
+                        {/* Quick Guide */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-left pt-4">
+                            {[
+                                { step: '1', title: 'Find', desc: 'Copy a link from Reels, TikTok, or YouTube' },
+                                { step: '2', title: 'Stash', desc: 'Paste it above and hit the magic button' }
+                            ].map((item) => (
+                                <div key={item.step} className="p-4 rounded-2xl bg-white/50 dark:bg-white/5 border border-gray-200 dark:border-white/10">
+                                    <div className="flex items-center gap-3 mb-2">
+                                        <span className="w-6 h-6 rounded-full bg-[#1DB954] text-black text-[10px] font-black flex items-center justify-center">
+                                            {item.step}
+                                        </span>
+                                        <span className="font-bold text-sm text-gray-900 dark:text-white uppercase tracking-wider">{item.title}</span>
+                                    </div>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">{item.desc}</p>
+                                </div>
+                            ))}
                         </div>
                     </div>
-
-                    <div className="space-y-2">
-                        <p className="text-lg text-gray-400">No songs stashed yet</p>
-                        <p className="text-sm text-gray-500 max-w-md mx-auto">
-                            Paste a link from YouTube, TikTok, Instagram, or any music platform above to start building your collection
-                        </p>
-                    </div>
-
-                    <div className="flex flex-wrap justify-center gap-2 text-xs text-gray-600">
-                        <span className="px-3 py-1 rounded-full bg-gray-800/50 border border-gray-700">YouTube</span>
-                        <span className="px-3 py-1 rounded-full bg-gray-800/50 border border-gray-700">TikTok</span>
-                        <span className="px-3 py-1 rounded-full bg-gray-800/50 border border-gray-700">Instagram</span>
-                        <span className="px-3 py-1 rounded-full bg-gray-800/50 border border-gray-700">SoundCloud</span>
-                    </div>
                 </div>
-            </div>
+            </motion.div>
         );
     }
 
@@ -112,58 +129,66 @@ export default function SongHistory({ history, onDelete }: SongHistoryProps) {
             )}
 
             <div className="grid grid-cols-1 gap-3">
-                {filteredHistory.length === 0 ? (
-                    <div className="text-center py-8 text-gray-500">
-                        <p className="text-sm">No songs match your search</p>
-                    </div>
-                ) : (
-                    filteredHistory.map((song, index) => {
-                        return (
-                            <div
-                                key={`${song.id}-${index}`}
-                                className={`flex items-center gap-4 p-4 bg-[#1D1D1F] rounded-lg border border-gray-800 hover:border-gray-700 transition-all group ${index === 0 ? 'animate-fade-in' : ''
-                                    } hover:bg-gray-800/30`}
+                <AnimatePresence mode="popLayout">
+                    {filteredHistory.length === 0 ? (
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            className="text-center py-8 text-gray-500"
+                        >
+                            <p className="text-sm">No songs match your search</p>
+                        </motion.div>
+                    ) : (
+                        filteredHistory.map((song, index) => (
+                            <motion.div
+                                key={`${song.id}-${song.created_at}`}
+                                layout
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, scale: 0.95 }}
+                                transition={{ duration: 0.3, delay: Math.min(index * 0.05, 0.3) }}
+                                className="flex items-center gap-4 p-4 bg-[#1D1D1F] rounded-lg border border-gray-800 hover:border-gray-700 transition-all group hover:bg-gray-800/30 shadow-sm"
                             >
                                 {/* Album Art */}
-                                <img
-                                    src={song.album_art_url}
-                                    alt={`${song.song} album art`}
-                                    className="w-16 h-16 rounded-md object-cover flex-shrink-0 shadow-lg"
-                                />
+                                <div className="relative flex-shrink-0">
+                                    <img
+                                        src={song.album_art_url}
+                                        alt={`${song.song} album art`}
+                                        className="w-16 h-16 rounded-md object-cover shadow-lg group-hover:scale-105 transition-transform duration-300"
+                                    />
+                                    <div className="absolute inset-0 rounded-md ring-1 ring-inset ring-white/10" />
+                                </div>
 
                                 {/* Song Info */}
                                 <div className="flex-1 min-w-0">
-                                    <h3 className="font-medium truncate text-[#E5E5E5]">{song.song}</h3>
-                                    <p className="text-sm text-gray-400 truncate">{song.artist}</p>
-                                    <p className="text-xs text-gray-500 mt-1">
-                                        From {song.source}
-                                    </p>
+                                    <h3 className="font-bold truncate text-[#E5E5E5] group-hover:text-[#1DB954] transition-colors">{song.song}</h3>
+                                    <p className="text-sm text-gray-400 truncate font-medium">{song.artist}</p>
+                                    <div className="flex items-center gap-2 mt-1">
+                                        <span className="text-[10px] font-black uppercase tracking-widest text-gray-500 bg-gray-800/50 px-2 py-0.5 rounded">
+                                            {song.source}
+                                        </span>
+                                        {song.genre && (
+                                            <span className="text-[10px] font-black uppercase tracking-widest text-[#1DB954]/70">
+                                                {song.genre}
+                                            </span>
+                                        )}
+                                    </div>
                                 </div>
 
                                 {/* Actions */}
                                 <div className="flex items-center gap-1">
-                                    {/* Share Button (Disabled/Future Feature) */}
-                                    <button
-                                        disabled
-                                        className="p-2 rounded-lg text-gray-600 cursor-not-allowed opacity-50"
-                                        title="Coming soon"
-                                    >
-                                        <Share2 className="w-5 h-5" />
-                                    </button>
-
-                                    {/* Delete Button */}
                                     <button
                                         onClick={() => onDelete(song.id)}
-                                        className="p-2 rounded-lg hover:bg-red-500/10 text-gray-500 hover:text-red-500 transition-colors md:opacity-0 group-hover:opacity-100"
+                                        className="p-3 rounded-full hover:bg-red-500/10 text-gray-500 hover:text-red-500 transition-all hover:scale-110 active:scale-95 md:opacity-0 group-hover:opacity-100"
                                         title="Remove from history"
                                     >
                                         <Trash2 className="w-5 h-5" />
                                     </button>
                                 </div>
-                            </div>
-                        );
-                    })
-                )}
+                            </motion.div>
+                        ))
+                    )}
+                </AnimatePresence>
             </div>
         </div>
     );

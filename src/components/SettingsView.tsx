@@ -1,4 +1,4 @@
-import { ArrowLeft, LogOut, Shield, Info, HelpCircle, ChevronRight } from 'lucide-react';
+import { ArrowLeft, LogOut, Shield, Info, HelpCircle, ChevronRight, Radio } from 'lucide-react';
 import { Button } from './ui/button';
 import { Label } from './ui/label';
 import { Switch } from './ui/switch';
@@ -18,6 +18,8 @@ interface SettingsViewProps {
     onPlaylistChange: (playlistId: string) => void;
     onToggleTheme: (value: 'light' | 'dark') => void;
     onOpenStats: () => void;
+    hasSpotifyToken: boolean;
+    onReconnectSpotify: () => void;
 }
 
 export function SettingsView({
@@ -33,6 +35,8 @@ export function SettingsView({
     onPlaylistChange,
     onToggleTheme,
     onOpenStats,
+    hasSpotifyToken,
+    onReconnectSpotify,
 }: SettingsViewProps) {
     return (
         <div className="min-h-screen bg-white dark:bg-black text-gray-900 dark:text-white">
@@ -55,6 +59,26 @@ export function SettingsView({
 
             {/* Content */}
             <div className="container mx-auto px-4 md:px-6 py-8 max-w-2xl">
+                {!hasSpotifyToken && (
+                    <div className="mb-6 p-4 rounded-2xl bg-orange-500/10 border border-orange-500/20 flex flex-col md:flex-row items-center justify-between gap-4">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-orange-500/20 flex items-center justify-center">
+                                <Radio className="w-5 h-5 text-orange-500" />
+                            </div>
+                            <div>
+                                <p className="font-bold text-orange-500">Spotify Disconnected</p>
+                                <p className="text-xs text-orange-500/70">Your session expired. Reconnect to access your playlists.</p>
+                            </div>
+                        </div>
+                        <Button
+                            onClick={onReconnectSpotify}
+                            size="sm"
+                            className="bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-full px-6"
+                        >
+                            Reconnect
+                        </Button>
+                    </div>
+                )}
                 <div className="space-y-6">
                     {/* Account Section */}
                     <div className="glass-card rounded-2xl p-6 space-y-4">
