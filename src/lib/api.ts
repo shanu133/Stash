@@ -242,23 +242,33 @@ export const api = {
         .single();
 
       if (error) {
-        // Broaden the check: if it's a 400 or specifically 42703 mentioning user_id, try fallback
-        const isColumnError = error.code === '42703' || (error.code === '400' && error.message?.includes('user_id'));
+        // Handle BOTH user_id and genre column issues (42703 = missing column, PGRST204 = schema cache mismatch)
+        const isColumnError = error.code === '42703' || error.code === 'PGRST204' || (error.code === '400' && (error.message?.includes('user_id') || error.message?.includes('genre')));
 
         if (isColumnError) {
-          console.warn("⚠️ Supabase: 'user_id' column issue detected. Retrying WITHOUT user_id filter...");
-          const { user_id, ...payloadWithoutUser } = payload;
+          console.warn(`⚠️ Supabase: Schema mismatch (${error.code}). Retrying with minimalist payload...`);
+
+          // Minimalist fallback: Only core columns that are almost certainly there
+          const minimalistPayload = {
+            song: payload.song,
+            artist: payload.artist,
+            source: payload.source,
+            album_art_url: payload.album_art_url,
+            preview_url: payload.preview_url,
+            spotify_url: payload.spotify_url
+          };
+
           const { data: retryData, error: retryError } = await supabase
             .from('history')
-            .insert(payloadWithoutUser)
+            .insert(minimalistPayload)
             .select()
             .single();
 
           if (retryError) {
-            console.error("❌ Supabase: Fallback save failed:", retryError);
+            console.error("❌ Supabase: Even minimalist save failed:", retryError);
             throw retryError;
           }
-          console.log("✅ Supabase: Save successful via fallback.");
+          console.log("✅ Supabase: Save successful via minimalist fallback.");
           savedSong = retryData as Song;
         } else {
           console.error("❌ Supabase: Insert error:", error);
