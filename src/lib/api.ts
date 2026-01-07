@@ -242,7 +242,21 @@ export const api = {
         .single();
 
       if (error) {
-        console.warn("⚠️ Supabase Insert Warning (Non-fatal):", error.message);
+        if (error.code === '42703' && error.message.includes('user_id')) {
+          console.warn("⚠️ Supabase: 'user_id' column missing. Retrying without it...");
+          // Fallback: Try inserting without user_id if column missing (Internal use only)
+          const { user_id, ...payloadWithoutUser } = payload;
+          const { data: retryData, error: retryError } = await supabase
+            .from('history')
+            .insert(payloadWithoutUser)
+            .select()
+            .single();
+
+          if (retryError) throw retryError;
+          savedSong = retryData as Song;
+        } else {
+          throw error;
+        }
       } else {
         savedSong = data as Song;
       }
@@ -266,17 +280,27 @@ export const api = {
       return [];
     }
 
-    const { data, error } = await supabase
+    let query = supabase
       .from('history')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false });
+      .select('*');
 
-    if (error) {
-      console.error("❌ History: Supabase fetch error:", error);
-      throw error;
+    if (user.id) {
+      // We try to filter by user_id but handle the case where the column doesn't exist
+      const { data, error } = await query.eq('user_id', user.id).order('created_at', { ascending: false });
+
+      if (error) {
+        if (error.code === '42703' && error.message.includes('user_id')) {
+          console.warn("⚠️ Supabase: 'user_id' column missing in history table. Fetching all items as fallback.");
+          const { data: fallbackData, error: fallbackError } = await query.order('created_at', { ascending: false });
+          if (fallbackError) throw fallbackError;
+          return fallbackData || [];
+        }
+        throw error;
+      }
+      return data || [];
     }
-    return data || [];
+
+    return [];
   },
 
   async deleteSong(id: string): Promise<void> {
