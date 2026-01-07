@@ -216,84 +216,42 @@ export const api = {
       }
     }
 
-    // Sanitize payload for Supabase (Undefined values can cause 400s)
+    // Sanitize payload for Supabase - START WITH BARE MINIMUM
     let savedSong: Song | null = null;
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Authentication required to save history");
 
-      const payload = {
-        user_id: user.id,
+      console.log("🔄 Supabase: Attempting BARE MINIMUM save (song, artist, source, album_art_url only)...");
+
+      // BARE MINIMUM PAYLOAD - Only columns that MUST exist
+      const bareMinimumPayload = {
         song: song.song,
         artist: song.artist,
         source: source || 'Web',
-        album_art_url: song.album_art_url,
-        preview_url: song.preview_url || null,
-        spotify_url: song.spotify_url || `https://open.spotify.com/track/${song.id}`,
-        genre: genre, // Add genre to Supabase payload
+        album_art_url: song.album_art_url
       };
-
-      console.log("🔄 Supabase: Attempting to save track history...", { song: song.song, user_id: user.id });
 
       const { data, error } = await supabase
         .from('history')
-        .insert(payload)
+        .insert(bareMinimumPayload)
         .select()
         .single();
 
       if (error) {
-        // Zero-Failure Strategy: If the first attempt fails for ANY reason, try a minimalist payload
-        console.warn(`⚠️ Supabase: Save failed (${error.code}). Retrying with minimalist payload...`);
-        console.log("DEBUG: Original error was:", error);
-
-        const minimalistPayload = {
-          song: payload.song,
-          artist: payload.artist,
-          source: payload.source,
-          album_art_url: payload.album_art_url,
-          preview_url: payload.preview_url,
-          spotify_url: payload.spotify_url
-        };
-
-        const { data: retryData, error: retryError } = await supabase
-          .from('history')
-          .insert(minimalistPayload)
-          .select()
-          .single();
-
-        if (retryError) {
-          console.error("❌ Supabase: Even minimalist save failed:", retryError);
-          throw retryError;
-        }
-        console.log("✅ Supabase: Save successful via minimalist fallback.");
-        savedSong = retryData as Song;
-      } else {
-        console.log("✅ Supabase: Save successful.");
-        savedSong = data as Song;
+        console.error("❌ Supabase: Even BARE MINIMUM save failed:", error);
+        console.error("❌ YOUR DATABASE IS BROKEN. You MUST add missing columns manually.");
+        throw new Error(`Database save failed: ${error.message}. Please add missing columns to your Supabase history table.`);
       }
+
+      console.log("✅ Supabase: Bare minimum save successful.");
+      savedSong = data as Song;
     } catch (dbError) {
-      console.warn("⚠️ Supabase DB operation failed (Ultimate Fallback Triggered):", dbError);
-      // Zero-Failure: Return a mock song object if DB fails entirely.
-      // This ensures the UI updates and the user is happy, even if persistence is temporarily broken.
-      savedSong = {
-        id: song.id || Date.now().toString(),
-        song: song.song,
-        artist: song.artist,
-        source: source || 'Web',
-        album_art_url: song.album_art_url,
-        preview_url: song.preview_url || null,
-        spotify_url: song.spotify_url || `https://open.spotify.com/track/${song.id}`,
-        created_at: new Date().toISOString()
-      } as Song;
-      console.log("🛠️ UI Fallback: Generated temporary song object for UI continuity.");
+      console.error("❌ CRITICAL DATABASE ERROR:", dbError);
+      throw dbError; // Don't hide the error - let it bubble up to the UI
     }
 
-    // With Ultimate Fallback, savedSong should now always exist.
-    if (!savedSong) {
-      throw new Error("Critical Failure: API could not generate song object.");
-    }
-
-    return { song: savedSong, playlistName: savedPlaylistName };
+    return { song: savedSong!, playlistName: savedPlaylistName };
   },
 
   async getUserHistory(): Promise<Song[]> {
