@@ -216,39 +216,41 @@ export const api = {
       }
     }
 
-    // Sanitize payload for Supabase - START WITH BARE MINIMUM
+    // Save to Supabase with FULL payload (all columns now exist!)
     let savedSong: Song | null = null;
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Authentication required to save history");
 
-      console.log("🔄 Supabase: Attempting BARE MINIMUM save (song, artist, source, album_art_url only)...");
-
-      // BARE MINIMUM PAYLOAD - Only columns that MUST exist
-      const bareMinimumPayload = {
+      const payload = {
+        user_id: user.id,
         song: song.song,
         artist: song.artist,
         source: source || 'Web',
-        album_art_url: song.album_art_url
+        album_art_url: song.album_art_url,
+        preview_url: song.preview_url || null,
+        spotify_url: song.spotify_url || `https://open.spotify.com/track/${song.id}`,
+        genre: genre,
       };
+
+      console.log("🔄 Supabase: Saving track with full payload...", { song: song.song, user_id: user.id });
 
       const { data, error } = await supabase
         .from('history')
-        .insert(bareMinimumPayload)
+        .insert(payload)
         .select()
         .single();
 
       if (error) {
-        console.error("❌ Supabase: Even BARE MINIMUM save failed:", error);
-        console.error("❌ YOUR DATABASE IS BROKEN. You MUST add missing columns manually.");
-        throw new Error(`Database save failed: ${error.message}. Please add missing columns to your Supabase history table.`);
+        console.error("❌ Supabase: Save failed:", error);
+        throw new Error(`Database save failed: ${error.message}`);
       }
 
-      console.log("✅ Supabase: Bare minimum save successful.");
+      console.log("✅ Supabase: Save successful!");
       savedSong = data as Song;
     } catch (dbError) {
       console.error("❌ CRITICAL DATABASE ERROR:", dbError);
-      throw dbError; // Don't hide the error - let it bubble up to the UI
+      throw dbError;
     }
 
     return { song: savedSong!, playlistName: savedPlaylistName };
