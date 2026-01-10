@@ -179,8 +179,9 @@ export default function SongHistory({ history, onDelete }: SongHistoryProps) {
                                 <div className="flex items-center gap-1">
                                     <button
                                         onClick={() => onDelete(song.id)}
-                                        className="p-3 rounded-full hover:bg-red-500/10 text-red-500/70 hover:text-red-500 transition-all hover:scale-110 active:scale-95"
+                                        className="p-2.5 rounded-full bg-red-500/5 hover:bg-red-500/10 text-red-500 hover:text-red-600 transition-all hover:scale-110 active:scale-95 border border-red-500/20"
                                         title="Remove from Spotify and history"
+                                        aria-label="Delete song"
                                     >
                                         <Trash2 className="w-5 h-5" />
                                     </button>
