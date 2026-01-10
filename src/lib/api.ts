@@ -308,6 +308,35 @@ export const api = {
     if (error) throw error;
   },
 
+  async removeFromSpotify(trackId: string, playlistId?: string): Promise<void> {
+    const token = await this.getSpotifyToken();
+    if (!token) {
+      console.warn('⚠️ No Spotify token, skipping Spotify deletion');
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/remove_track`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          token,
+          track_id: trackId,
+          playlist_id: playlistId || '1'
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to remove from Spotify: ${response.status}`);
+      }
+
+      console.log('✅ Successfully removed from Spotify');
+    } catch (error) {
+      console.error('❌ Error removing from Spotify:', error);
+      // Don't throw - we still want to delete from history even if Spotify fails
+    }
+  },
+
   async updateUserPreferences(prefs: {
     autoAddTopMatch?: boolean;
     defaultPlaylistId?: string;

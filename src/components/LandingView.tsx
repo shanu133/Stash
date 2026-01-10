@@ -214,31 +214,30 @@ export function LandingView({ onConnect, theme, onToggleTheme, onNavigate }: Lan
       </div>
 
       {/* Footer */}
-      <footer className="relative z-10 border-t border-gray-200 dark:border-white/10 py-8 text-gray-900 dark:text-white">
+      <footer className="relative z-10 border-t border-gray-200 dark:border-white/10 py-6 text-gray-900 dark:text-white">
         <div className="container mx-auto px-4 md:px-6">
-          <div className="flex flex-col items-center justify-center gap-4">
-            <p className="text-gray-500 dark:text-gray-500 text-sm text-center">
-              © 2026 Stash. The internet's save button for music.
+          <div className="flex flex-col md:flex-row items-center justify-between gap-3">
+            <p className="text-gray-500 dark:text-gray-500 text-xs text-center md:text-left">
+              © 2026 Stash • Designed & Developed by Sahil Sharma
             </p>
-            <p className="text-gray-600 dark:text-gray-400 text-sm">
-              Designed & Developed by Sahil Sharma
-            </p>
-            <div className="flex items-center gap-6 text-sm">
+            <div className="flex items-center gap-4 text-xs">
               <button
                 onClick={() => onNavigate?.('privacy')}
-                className="text-gray-600 dark:text-gray-400 hover:text-[#1DB954] transition-colors"
+                className="text-gray-500 dark:text-gray-600 hover:text-[#1DB954] transition-colors"
               >
                 Privacy
               </button>
+              <span className="text-gray-400">•</span>
               <button
                 onClick={() => onNavigate?.('about')}
-                className="text-gray-600 dark:text-gray-400 hover:text-[#1DB954] transition-colors"
+                className="text-gray-500 dark:text-gray-600 hover:text-[#1DB954] transition-colors"
               >
                 About
               </button>
+              <span className="text-gray-400">•</span>
               <button
                 onClick={() => onNavigate?.('help')}
-                className="text-gray-600 dark:text-gray-400 hover:text-[#1DB954] transition-colors"
+                className="text-gray-500 dark:text-gray-600 hover:text-[#1DB954] transition-colors"
               >
                 Help
               </button>

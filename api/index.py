@@ -238,6 +238,11 @@ class SaveWebTrackRequest(BaseModel):
     track_id: str
     playlist_id: str
 
+class RemoveTrackRequest(BaseModel):
+    token: str
+    track_id: str
+    playlist_id: str = "1"  # Default to liked songs
+
 # Helper: AI Genre Detection
 def detect_genre_with_gemini(track_name, artist_name):
     """Detect music genre using Gemini AI"""
@@ -370,4 +375,43 @@ def save_track_to_spotify(request: SaveWebTrackRequest):
 
     except Exception as e:
         print(f"❌ Save Error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/remove_track")
+def remove_track_from_spotify(request: RemoveTrackRequest):
+    """Remove track from Spotify library and/or playlist"""
+    if settings.ENABLE_DEBUG_LOGS:
+        print(f"🗑️ Removing Track: {request.track_id} from Playlist: {request.playlist_id}")
+    
+    try:
+        # Initialize User Context
+        user_sp = spotipy.Spotify(auth=request.token)
+        
+        # Always remove from Liked Songs
+        try:
+            user_sp.current_user_saved_tracks_delete([request.track_id])
+            if settings.ENABLE_DEBUG_LOGS:
+                print("✅ Removed from Liked Songs")
+        except Exception as e:
+            # Song might not be in liked songs, that's okay
+            if settings.ENABLE_DEBUG_LOGS:
+                print(f"⚠️ Not in Liked Songs: {e}")
+        
+        # If playlist_id provided and not "1" (Liked Songs), also remove from that playlist
+        if request.playlist_id and request.playlist_id != '1' and request.playlist_id != 'smart_sort':
+            try:
+                user_sp.playlist_remove_all_occurrences_of_items(
+                    request.playlist_id, 
+                    [f"spotify:track:{request.track_id}"]
+                )
+                if settings.ENABLE_DEBUG_LOGS:
+                    print(f"✅ Removed from playlist: {request.playlist_id}")
+            except Exception as e:
+                if settings.ENABLE_DEBUG_LOGS:
+                    print(f"⚠️ Playlist removal failed: {e}")
+        
+        return {"success": True}
+    
+    except Exception as e:
+        print(f"❌ Remove Error: {e}")
         raise HTTPException(status_code=500, detail=str(e))

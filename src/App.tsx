@@ -305,12 +305,24 @@ export default function App() {
 
   const handleDeleteSong = async (id: string) => {
     try {
+      // Find the song to get its Spotify track ID
+      const song = state.history.find(s => s.id === id);
+
+      // Remove from Spotify first (if we have the track info)
+      if (song?.spotify_url) {
+        const trackId = song.spotify_url.split('/').pop()?.split('?')[0];
+        if (trackId) {
+          await api.removeFromSpotify(trackId, state.defaultPlaylistId);
+        }
+      }
+
+      // Then remove from Stash history
       await api.deleteSong(id);
       setState((prev) => ({
         ...prev,
         history: prev.history.filter((song) => song.id !== id),
       }));
-      toast.success('Song removed from history');
+      toast.success('Song removed from Spotify and history');
     } catch (error) {
       logger.error('Failed to delete song:', error);
       toast.error('Failed to delete song');
