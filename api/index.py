@@ -84,7 +84,7 @@ async def recognize_reel(req: ReelRequest, request: Request):
         shazam = Shazam()
         
         # Shazam requires ffmpeg or compatible file. Our download_audio handles this.
-        out = await shazam.recognize_song(audio_filename)
+        out = await shazam.recognize(audio_filename)
         
         # Cleanup audio immediately
         if os.path.exists(audio_filename): os.remove(audio_filename)
